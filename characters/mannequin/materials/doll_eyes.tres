@@ -1,0 +1,10 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://cr6i5d85ce2jh"]
+
+[ext_resource type="Shader" uid="uid://cukogbu032fnp" path="res://common/shaders/toon.gdshader" id="1_toon"]
+[ext_resource type="Texture2D" uid="uid://dbecvfxmoumj8" path="res://characters/mannequin/doll_Eyes.png" id="2_Doll_Eyes"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_toon")
+shader_parameter/albedo_texture = ExtResource("2_Doll_Eyes")
+shader_parameter/texture_base_color = Color(1, 1, 1, 1)

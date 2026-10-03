@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://gw1j7b4geycr"]
+
+[ext_resource type="Script" uid="uid://dct4dfbclrik8" path="res://main/main.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://buexxar308pwg" path="res://stages/dressing_room/dressing_room.tscn" id="2_dressing_room"]
+[ext_resource type="PackedScene" uid="uid://dapy27jusk7qy" path="res://ui/customization_menu/customization_menu.tscn" id="3_menu"]
+[ext_resource type="PackedScene" uid="uid://chroilogh0fgu" path="res://stages/bedroom/bedroom.tscn" id="4_bedroom"]
+
+[node name="Main" type="Node" unique_id=598557976]
+script = ExtResource("1_script")
+play_stage = ExtResource("4_bedroom")
+
+[node name="DressingRoom" parent="." unique_id=1097799863 instance=ExtResource("2_dressing_room")]
+
+[node name="CustomizationMenu" parent="." unique_id=692584202 instance=ExtResource("3_menu")]

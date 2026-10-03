@@ -1,0 +1,10 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://b1kb80mo6ewkk"]
+
+[ext_resource type="Shader" uid="uid://cukogbu032fnp" path="res://common/shaders/toon.gdshader" id="1_toon"]
+[ext_resource type="Texture2D" uid="uid://dcp8qumvqicxf" path="res://characters/mannequin/doll_Hair.png" id="2_Doll_Hair"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_toon")
+shader_parameter/albedo_texture = ExtResource("2_Doll_Hair")
+shader_parameter/texture_base_color = Color(0.7647, 0.7647, 0.7647, 1)

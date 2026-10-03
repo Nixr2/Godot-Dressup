@@ -1,0 +1,76 @@
+[gd_scene format=3 uid="uid://dx5outh41av8v"]
+
+[ext_resource type="Script" uid="uid://3mp4yu6hiuv6" path="res://stages/walkable_stage.gd" id="1_playground"]
+[ext_resource type="Environment" uid="uid://dbrxaqy7vykuo" path="res://stages/playground/playground_environment.tres" id="2_environment"]
+[ext_resource type="Material" uid="uid://g3pdsawnaee" path="res://stages/playground/grid_floor_material.tres" id="3_grid_floor"]
+[ext_resource type="PackedScene" uid="uid://i2j85nd3dfkx" path="res://player/player.tscn" id="4_player"]
+[ext_resource type="PackedScene" uid="uid://cojmxonrtbqub" path="res://ui/stage_hud/stage_hud.tscn" id="5_stage_hud"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_floor"]
+material = ExtResource("3_grid_floor")
+size = Vector2(40, 40)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
+size = Vector3(40, 1, 40)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_crate"]
+albedo_color = Color(0.55, 0.42, 0.3, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_crate"]
+material = SubResource("StandardMaterial3D_crate")
+size = Vector3(0.6, 0.6, 0.6)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_crate"]
+size = Vector3(0.6, 0.6, 0.6)
+
+[node name="Playground" type="Node3D"]
+script = ExtResource("1_playground")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = ExtResource("2_environment")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866025, -0.353553, 0.353553, 0, 0.707107, 0.707107, -0.5, -0.612372, 0.612372, 0, 5, 0)
+shadow_enabled = true
+
+[node name="Floor" type="StaticBody3D" parent="."]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Floor"]
+mesh = SubResource("PlaneMesh_floor")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Floor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+shape = SubResource("BoxShape3D_floor")
+
+[node name="Crates" type="Node3D" parent="."]
+
+[node name="Crate1" type="StaticBody3D" parent="Crates"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.3, -3)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Crates/Crate1"]
+mesh = SubResource("BoxMesh_crate")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Crates/Crate1"]
+shape = SubResource("BoxShape3D_crate")
+
+[node name="Crate2" type="StaticBody3D" parent="Crates"]
+transform = Transform3D(0.866025, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866025, -3, 0.3, -1)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Crates/Crate2"]
+mesh = SubResource("BoxMesh_crate")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Crates/Crate2"]
+shape = SubResource("BoxShape3D_crate")
+
+[node name="Crate3" type="StaticBody3D" parent="Crates"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.3, 4)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Crates/Crate3"]
+mesh = SubResource("BoxMesh_crate")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Crates/Crate3"]
+shape = SubResource("BoxShape3D_crate")
+
+[node name="Player" parent="." instance=ExtResource("4_player")]
+
+[node name="StageHud" parent="." instance=ExtResource("5_stage_hud")]

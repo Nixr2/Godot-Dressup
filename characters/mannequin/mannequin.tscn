@@ -1,0 +1,104 @@
+[gd_scene format=3 uid="uid://uwr5fbydffsj"]
+
+[ext_resource type="Script" uid="uid://d7m3xscljlmi" path="res://characters/mannequin/mannequin.gd" id="1_mannequin"]
+[ext_resource type="Resource" uid="uid://dlb5uvfw341kg" path="res://characters/mannequin/default_appearance.tres" id="2_default_appearance"]
+[ext_resource type="PackedScene" uid="uid://dh5aoap7u4tkp" path="res://characters/mannequin/doll.glb" id="3_doll"]
+[ext_resource type="Script" uid="uid://b7h52sk4nifuf" path="res://customization/wardrobe.gd" id="4_wardrobe"]
+[ext_resource type="Material" uid="uid://dadhtb5xalp62" path="res://common/materials/toon.tres" id="5_toon"]
+[ext_resource type="Script" uid="uid://ncx7wayjjo0e" path="res://customization/body_customizer.gd" id="6_body_customizer"]
+[ext_resource type="Resource" uid="uid://l1p2rftlwqdb" path="res://customization/default_skin_tone_palette.tres" id="7_skin_tone_palette"]
+[ext_resource type="SkeletonProfile" uid="uid://c76q3i713kvyc" path="res://characters/mannequin/doll_skeleton_profile.tres" id="8_doll_skeleton_profile"]
+[ext_resource type="Script" uid="uid://cyf86yv8ffout" path="res://customization/shape_key_controller.gd" id="9_shape_key_controller"]
+[ext_resource type="Resource" uid="uid://dvhgumrik1f32" path="res://characters/mannequin/doll_shape_keys.tres" id="10_doll_shape_keys"]
+[ext_resource type="AnimationLibrary" uid="uid://6oqxadbnnuvy" path="res://characters/mannequin/animations/idle.glb" id="11_idle"]
+[ext_resource type="Script" uid="uid://b376gl15ev3hy" path="res://common/animation/character_animator.gd" id="12_character_animator"]
+[ext_resource type="Resource" uid="uid://d1ptd4ovch1yj" path="res://characters/mannequin/arm_poses/hand_on_hip.tres" id="13_hand_on_hip"]
+[ext_resource type="Resource" uid="uid://byv74wae032lf" path="res://characters/mannequin/arm_poses/covering.tres" id="14_covering"]
+[ext_resource type="Script" uid="uid://bwd8ajrvqy2qi" path="res://common/animation/arm_pose.gd" id="15_arm_pose"]
+[ext_resource type="AnimationLibrary" uid="uid://cue0abjuplx1o" path="res://characters/mannequin/animations/walk.glb" id="16_walk"]
+[ext_resource type="AnimationLibrary" uid="uid://tyu8scd2kcs5" path="res://characters/mannequin/animations/lewd_pose.glb" id="17_lewd_pose"]
+[ext_resource type="Script" uid="uid://br6f105reh8ft" path="res://common/animation/body_pose.gd" id="18_body_pose"]
+[ext_resource type="Resource" uid="uid://mdw6noxmlg1o" path="res://characters/mannequin/body_poses/lewd_pose_1.tres" id="19_lewd_pose_1"]
+[ext_resource type="Material" uid="uid://bgrl7hpvnvcc4" path="res://characters/mannequin/materials/doll_skin.tres" id="20_doll_skin"]
+[ext_resource type="Material" uid="uid://b1kb80mo6ewkk" path="res://characters/mannequin/materials/doll_hair.tres" id="21_doll_hair"]
+[ext_resource type="Script" uid="uid://bx3kroe70plr6" path="res://common/animation/look_at_controller.gd" id="23_look_at_controller"]
+
+[node name="Mannequin" type="Node3D"]
+script = ExtResource("1_mannequin")
+initial_appearance = ExtResource("2_default_appearance")
+
+[node name="Model" parent="." instance=ExtResource("3_doll")]
+
+[node name="HeadLookAt" type="LookAtModifier3D" parent="Model/root/Skeleton3D"]
+bone_name = "head.x"
+forward_axis = 4
+primary_rotation_axis = 1
+use_secondary_rotation = true
+duration = 0.35
+transition_type = 1
+ease_type = 1
+use_angle_limitation = true
+symmetry_limitation = true
+primary_limit_angle = 1.745329
+secondary_limit_angle = 1.047198
+
+[node name="LeftEyeLookAt" type="LookAtModifier3D" parent="Model/root/Skeleton3D"]
+bone_name = "c_eye.l"
+forward_axis = 2
+primary_rotation_axis = 2
+use_secondary_rotation = true
+duration = 0.12
+transition_type = 1
+ease_type = 1
+use_angle_limitation = true
+symmetry_limitation = true
+primary_limit_angle = 0.872665
+secondary_limit_angle = 0.523599
+
+[node name="RightEyeLookAt" type="LookAtModifier3D" parent="Model/root/Skeleton3D"]
+bone_name = "c_eye.r"
+forward_axis = 2
+primary_rotation_axis = 2
+use_secondary_rotation = true
+duration = 0.12
+transition_type = 1
+ease_type = 1
+use_angle_limitation = true
+symmetry_limitation = true
+primary_limit_angle = 0.872665
+secondary_limit_angle = 0.523599
+
+[node name="ClothingRig" type="RetargetModifier3D" parent="Model/root/Skeleton3D"]
+profile = ExtResource("8_doll_skeleton_profile")
+
+[node name="Wardrobe" type="Node" parent="." node_paths=PackedStringArray("skeleton", "clothing_rig")]
+script = ExtResource("4_wardrobe")
+skeleton = NodePath("../Model/root/Skeleton3D")
+clothing_rig = NodePath("../Model/root/Skeleton3D/ClothingRig")
+toon_material = ExtResource("5_toon")
+body_material = ExtResource("20_doll_skin")
+
+[node name="BodyCustomizer" type="Node" parent="." node_paths=PackedStringArray("mesh_root")]
+script = ExtResource("6_body_customizer")
+palette = ExtResource("7_skin_tone_palette")
+mesh_root = NodePath("../Model/root/Skeleton3D")
+skin_material = ExtResource("20_doll_skin")
+hair_material = ExtResource("21_doll_hair")
+
+[node name="CharacterAnimator" type="AnimationTree" parent="." node_paths=PackedStringArray("skeleton")]
+script = ExtResource("12_character_animator")
+skeleton = NodePath("../Model/root/Skeleton3D")
+animation_libraries = Array[AnimationLibrary]([ExtResource("11_idle"), ExtResource("16_walk"), ExtResource("17_lewd_pose")])
+body_poses = Array[ExtResource("18_body_pose")]([ExtResource("19_lewd_pose_1")])
+arm_poses = Array[ExtResource("15_arm_pose")]([ExtResource("13_hand_on_hip"), ExtResource("14_covering")])
+
+[node name="ShapeKeyController" type="Node" parent="." node_paths=PackedStringArray("wardrobe", "mesh_root")]
+script = ExtResource("9_shape_key_controller")
+shape_key_set = ExtResource("10_doll_shape_keys")
+wardrobe = NodePath("../Wardrobe")
+mesh_root = NodePath("../Model/root/Skeleton3D")
+
+[node name="LookAtController" type="Node" parent="." node_paths=PackedStringArray("head_modifiers", "eye_modifiers")]
+script = ExtResource("23_look_at_controller")
+head_modifiers = [NodePath("../Model/root/Skeleton3D/HeadLookAt")]
+eye_modifiers = [NodePath("../Model/root/Skeleton3D/LeftEyeLookAt"), NodePath("../Model/root/Skeleton3D/RightEyeLookAt")]

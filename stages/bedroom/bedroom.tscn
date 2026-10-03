@@ -1,0 +1,27 @@
+[gd_scene format=3 uid="uid://chroilogh0fgu"]
+
+[ext_resource type="Script" uid="uid://3mp4yu6hiuv6" path="res://stages/walkable_stage.gd" id="1_walkable_stage"]
+[ext_resource type="Environment" uid="uid://na503gt86wq4" path="res://stages/bedroom/bedroom_environment.tres" id="2_environment"]
+[ext_resource type="PackedScene" uid="uid://0vbef1d0lx23" path="res://stages/bedroom/bedroom.glb" id="3_bedroom_model"]
+[ext_resource type="PackedScene" uid="uid://i2j85nd3dfkx" path="res://player/player.tscn" id="4_player"]
+[ext_resource type="PackedScene" uid="uid://cojmxonrtbqub" path="res://ui/stage_hud/stage_hud.tscn" id="5_stage_hud"]
+
+[node name="Bedroom" type="Node3D"]
+script = ExtResource("1_walkable_stage")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = ExtResource("2_environment")
+
+[node name="CeilingLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+light_color = Color(1, 0.94, 0.85, 1)
+light_energy = 1.2
+shadow_enabled = true
+omni_range = 5.0
+
+[node name="Model" parent="." instance=ExtResource("3_bedroom_model")]
+
+[node name="Player" parent="." instance=ExtResource("4_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.6)
+
+[node name="StageHud" parent="." instance=ExtResource("5_stage_hud")]

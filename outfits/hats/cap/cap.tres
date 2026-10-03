@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="OutfitItem" format=3 uid="uid://duy5if67uty4p"]
+
+[ext_resource type="Script" uid="uid://cox8rdaau8r6l" path="res://customization/outfit_item.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://bob52vsl087nf" path="res://outfits/hats/cap/cap.tscn" id="2_scene"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"cap"
+display_name = "Cap"
+slot = 0
+scene = ExtResource("2_scene")
+attach_bone = &"head.x"
+default_tint = Color(0.75, 0.15, 0.15, 1)

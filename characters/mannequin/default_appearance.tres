@@ -1,0 +1,6 @@
+[gd_resource type="Resource" script_class="CharacterAppearance" format=3 uid="uid://dlb5uvfw341kg"]
+
+[ext_resource type="Script" uid="uid://c47y8f3whyeaa" path="res://customization/character_appearance.gd" id="1_character_appearance"]
+
+[resource]
+script = ExtResource("1_character_appearance")

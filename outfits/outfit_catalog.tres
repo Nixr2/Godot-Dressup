@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="OutfitCatalog" format=3 uid="uid://cgry3w1m1m58w"]
+
+[ext_resource type="Script" uid="uid://br087bg3gtius" path="res://customization/outfit_catalog.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://cox8rdaau8r6l" path="res://customization/outfit_item.gd" id="2_item"]
+[ext_resource type="Resource" uid="uid://db6ifk72n4j0x" path="res://outfits/tops/school_top/school_top.tres" id="3_school_top"]
+[ext_resource type="Resource" uid="uid://c2ig0wyc6hhje" path="res://outfits/bottoms/school_skirt/school_skirt.tres" id="4_school_skirt"]
+
+[resource]
+script = ExtResource("1_script")
+items = Array[ExtResource("2_item")]([ExtResource("3_school_top"), ExtResource("4_school_skirt")])

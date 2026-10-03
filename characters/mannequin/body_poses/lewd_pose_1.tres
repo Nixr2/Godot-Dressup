@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="BodyPose" format=3 uid="uid://mdw6noxmlg1o"]
+
+[ext_resource type="Script" uid="uid://br6f105reh8ft" path="res://common/animation/body_pose.gd" id="1_body_pose"]
+
+[resource]
+script = ExtResource("1_body_pose")
+id = &"lewd_pose_1"
+display_name = "Lewd Pose 1"
+animation = &"lewd pose 1"

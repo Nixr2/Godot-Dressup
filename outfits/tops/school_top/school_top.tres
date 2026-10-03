@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="OutfitItem" format=3 uid="uid://db6ifk72n4j0x"]
+
+[ext_resource type="Script" uid="uid://cox8rdaau8r6l" path="res://customization/outfit_item.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://b7joanxs316im" path="res://outfits/tops/school_top/school_top.glb" id="2_scene"]
+[ext_resource type="Resource" uid="uid://bn2lhyafaaveo" path="res://characters/mannequin/doll_hide_mask_body.tres" id="3_hide_mask_body"]
+[ext_resource type="Texture2D" uid="uid://b3hqn4mw46qx2" path="res://outfits/tops/school_top/school_top_hide_mask.png" id="4_hide_mask"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"school_top"
+display_name = "School Top"
+slot = 1
+scene = ExtResource("2_scene")
+hide_mask = ExtResource("4_hide_mask")
+hide_mask_body = ExtResource("3_hide_mask_body")
+default_tint = Color(0.95, 0.94, 0.92, 1)

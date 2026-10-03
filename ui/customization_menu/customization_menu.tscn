@@ -1,0 +1,285 @@
+[gd_scene format=3 uid="uid://dapy27jusk7qy"]
+
+[ext_resource type="Script" uid="uid://dbho2bdp6o4c4" path="res://ui/customization_menu/customization_menu.gd" id="1_script"]
+[ext_resource type="Resource" uid="uid://cgry3w1m1m58w" path="res://outfits/outfit_catalog.tres" id="2_catalog"]
+[ext_resource type="Resource" uid="uid://l1p2rftlwqdb" path="res://customization/default_skin_tone_palette.tres" id="3_skin_tone_palette"]
+[ext_resource type="Resource" uid="uid://dvhgumrik1f32" path="res://characters/mannequin/doll_shape_keys.tres" id="4_doll_shape_keys"]
+[ext_resource type="Theme" uid="uid://u8m8mvxnk223" path="res://ui/theme/dreamy_theme.tres" id="5_dreamy_theme"]
+
+[node name="CustomizationMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("5_dreamy_theme")
+script = ExtResource("1_script")
+catalog = ExtResource("2_catalog")
+skin_tone_palette = ExtResource("3_skin_tone_palette")
+shape_key_set = ExtResource("4_doll_shape_keys")
+
+[node name="LeftPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 316.0
+offset_bottom = -16.0
+grow_vertical = 2
+
+[node name="Content" type="VBoxContainer" parent="LeftPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="LeftPanel/Content"]
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+text = "Dress Up"
+horizontal_alignment = 1
+
+[node name="Hint" type="Label" parent="LeftPanel/Content"]
+layout_mode = 2
+theme_type_variation = &"HintLabel"
+text = "Hover a section to focus. Right-drag to orbit."
+horizontal_alignment = 1
+
+[node name="LeftScroll" type="ScrollContainer" parent="LeftPanel/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Sections" type="VBoxContainer" parent="LeftPanel/Content/LeftScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="SkinCard" type="PanelContainer" parent="LeftPanel/Content/LeftScroll/Sections"]
+layout_mode = 2
+theme_type_variation = &"Card"
+metadata/focus = &"full_body"
+
+[node name="Content" type="VBoxContainer" parent="LeftPanel/Content/LeftScroll/Sections/SkinCard"]
+layout_mode = 2
+
+[node name="Header" type="Label" parent="LeftPanel/Content/LeftScroll/Sections/SkinCard/Content"]
+layout_mode = 2
+theme_type_variation = &"SectionHeader"
+text = "Skin"
+
+[node name="SkinTonePreview" type="TextureRect" parent="LeftPanel/Content/LeftScroll/Sections/SkinCard/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+expand_mode = 1
+
+[node name="SkinToneSlider" type="HSlider" parent="LeftPanel/Content/LeftScroll/Sections/SkinCard/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+max_value = 1.0
+step = 0.01
+
+[node name="UndertoneRow" type="HBoxContainer" parent="LeftPanel/Content/LeftScroll/Sections/SkinCard/Content"]
+layout_mode = 2
+
+[node name="CoolLabel" type="Label" parent="LeftPanel/Content/LeftScroll/Sections/SkinCard/Content/UndertoneRow"]
+layout_mode = 2
+theme_type_variation = &"HintLabel"
+text = "Cool"
+
+[node name="UndertoneSlider" type="HSlider" parent="LeftPanel/Content/LeftScroll/Sections/SkinCard/Content/UndertoneRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+min_value = -1.0
+max_value = 1.0
+step = 0.01
+
+[node name="WarmLabel" type="Label" parent="LeftPanel/Content/LeftScroll/Sections/SkinCard/Content/UndertoneRow"]
+layout_mode = 2
+theme_type_variation = &"HintLabel"
+text = "Warm"
+
+[node name="HairCard" type="PanelContainer" parent="LeftPanel/Content/LeftScroll/Sections"]
+layout_mode = 2
+theme_type_variation = &"Card"
+metadata/focus = &"head"
+
+[node name="Content" type="VBoxContainer" parent="LeftPanel/Content/LeftScroll/Sections/HairCard"]
+layout_mode = 2
+
+[node name="Header" type="Label" parent="LeftPanel/Content/LeftScroll/Sections/HairCard/Content"]
+layout_mode = 2
+theme_type_variation = &"SectionHeader"
+text = "Hair"
+
+[node name="HairRow" type="HBoxContainer" parent="LeftPanel/Content/LeftScroll/Sections/HairCard/Content"]
+layout_mode = 2
+
+[node name="HairSwatches" type="HFlowContainer" parent="LeftPanel/Content/LeftScroll/Sections/HairCard/Content/HairRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HairColorPicker" type="ColorPickerButton" parent="LeftPanel/Content/LeftScroll/Sections/HairCard/Content/HairRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(34, 24)
+layout_mode = 2
+size_flags_vertical = 0
+tooltip_text = "Custom hair color"
+edit_alpha = false
+
+[node name="BodyShapeCard" type="PanelContainer" parent="LeftPanel/Content/LeftScroll/Sections"]
+layout_mode = 2
+theme_type_variation = &"Card"
+metadata/focus = &"torso"
+
+[node name="Content" type="VBoxContainer" parent="LeftPanel/Content/LeftScroll/Sections/BodyShapeCard"]
+layout_mode = 2
+
+[node name="Header" type="Label" parent="LeftPanel/Content/LeftScroll/Sections/BodyShapeCard/Content"]
+layout_mode = 2
+theme_type_variation = &"SectionHeader"
+text = "Body Shape"
+
+[node name="BodyShapeList" type="VBoxContainer" parent="LeftPanel/Content/LeftScroll/Sections/BodyShapeCard/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ExpressionCard" type="PanelContainer" parent="LeftPanel/Content/LeftScroll/Sections"]
+layout_mode = 2
+theme_type_variation = &"Card"
+metadata/focus = &"face"
+
+[node name="Content" type="VBoxContainer" parent="LeftPanel/Content/LeftScroll/Sections/ExpressionCard"]
+layout_mode = 2
+
+[node name="Header" type="Label" parent="LeftPanel/Content/LeftScroll/Sections/ExpressionCard/Content"]
+layout_mode = 2
+theme_type_variation = &"SectionHeader"
+text = "Expression"
+
+[node name="ExpressionButtons" type="HFlowContainer" parent="LeftPanel/Content/LeftScroll/Sections/ExpressionCard/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="AutoBlinkCheck" type="CheckBox" parent="LeftPanel/Content/LeftScroll/Sections/ExpressionCard/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+button_pressed = true
+text = "Auto Blink"
+
+[node name="PoseCard" type="PanelContainer" parent="LeftPanel/Content/LeftScroll/Sections"]
+layout_mode = 2
+theme_type_variation = &"Card"
+metadata/focus = &"full_body"
+
+[node name="Content" type="VBoxContainer" parent="LeftPanel/Content/LeftScroll/Sections/PoseCard"]
+layout_mode = 2
+
+[node name="Header" type="Label" parent="LeftPanel/Content/LeftScroll/Sections/PoseCard/Content"]
+layout_mode = 2
+theme_type_variation = &"SectionHeader"
+text = "Pose"
+
+[node name="BodyLabel" type="Label" parent="LeftPanel/Content/LeftScroll/Sections/PoseCard/Content"]
+layout_mode = 2
+theme_type_variation = &"HintLabel"
+text = "Body"
+
+[node name="BodyPoseButtons" type="HFlowContainer" parent="LeftPanel/Content/LeftScroll/Sections/PoseCard/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ArmsLabel" type="Label" parent="LeftPanel/Content/LeftScroll/Sections/PoseCard/Content"]
+layout_mode = 2
+theme_type_variation = &"HintLabel"
+text = "Arms"
+
+[node name="ArmPoseButtons" type="HFlowContainer" parent="LeftPanel/Content/LeftScroll/Sections/PoseCard/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="RightPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -296.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -92.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="Content" type="VBoxContainer" parent="RightPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="RightPanel/Content"]
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+text = "Wardrobe"
+horizontal_alignment = 1
+
+[node name="FollowRow" type="HBoxContainer" parent="RightPanel/Content"]
+layout_mode = 2
+alignment = 1
+
+[node name="FollowLabel" type="Label" parent="RightPanel/Content/FollowRow"]
+layout_mode = 2
+theme_type_variation = &"HintLabel"
+text = "Follow camera:"
+
+[node name="HeadFollowToggle" type="Button" parent="RightPanel/Content/FollowRow"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Head turns to follow the camera"
+theme_type_variation = &"ToggleChip"
+toggle_mode = true
+button_pressed = true
+text = "Head"
+
+[node name="EyesFollowToggle" type="Button" parent="RightPanel/Content/FollowRow"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Eyes follow the camera"
+theme_type_variation = &"ToggleChip"
+toggle_mode = true
+button_pressed = true
+text = "Eyes"
+
+[node name="RightScroll" type="ScrollContainer" parent="RightPanel/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="SlotList" type="VBoxContainer" parent="RightPanel/Content/RightScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="PlayButton" type="Button" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(280, 60)
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -296.0
+offset_top = -76.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_type_variation = &"PlayButton"
+text = "Play"

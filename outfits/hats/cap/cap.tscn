@@ -1,0 +1,24 @@
+[gd_scene format=3 uid="uid://bob52vsl087nf"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cotton"]
+albedo_color = Color(0.75, 0.15, 0.15, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_crown"]
+material = SubResource("StandardMaterial3D_cotton")
+radius = 0.26
+height = 0.26
+is_hemisphere = true
+
+[sub_resource type="BoxMesh" id="BoxMesh_visor"]
+material = SubResource("StandardMaterial3D_cotton")
+size = Vector3(0.3, 0.02, 0.18)
+
+[node name="Cap" type="Node3D"]
+
+[node name="Crown" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+mesh = SubResource("SphereMesh_crown")
+
+[node name="Visor" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, 0.28)
+mesh = SubResource("BoxMesh_visor")

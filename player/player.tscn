@@ -1,0 +1,32 @@
+[gd_scene format=3 uid="uid://i2j85nd3dfkx"]
+
+[ext_resource type="Script" uid="uid://ba3qktxoy1toj" path="res://player/player.gd" id="1_player"]
+[ext_resource type="PackedScene" uid="uid://uwr5fbydffsj" path="res://characters/mannequin/mannequin.tscn" id="2_mannequin"]
+[ext_resource type="Script" uid="uid://f2cr7twh03am" path="res://player/third_person_camera.gd" id="3_third_person_camera"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
+radius = 0.15
+height = 1.15
+
+[node name="Player" type="CharacterBody3D"]
+collision_layer = 2
+script = ExtResource("1_player")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.575, 0)
+shape = SubResource("CapsuleShape3D_body")
+
+[node name="Mannequin" parent="." instance=ExtResource("2_mannequin")]
+
+[node name="CameraRig" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+script = ExtResource("3_third_person_camera")
+
+[node name="SpringArm3D" type="SpringArm3D" parent="CameraRig"]
+collision_mask = 1
+spring_length = 2.2
+margin = 0.1
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig/SpringArm3D"]
+current = true
+fov = 55.0

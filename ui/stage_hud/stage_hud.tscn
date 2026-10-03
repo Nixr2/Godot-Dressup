@@ -1,0 +1,96 @@
+[gd_scene format=3 uid="uid://cojmxonrtbqub"]
+
+[ext_resource type="Script" uid="uid://bx10vkxm3v2c1" path="res://ui/stage_hud/stage_hud.gd" id="1_stage_hud"]
+[ext_resource type="Theme" uid="uid://u8m8mvxnk223" path="res://ui/theme/dreamy_theme.tres" id="2_dreamy_theme"]
+
+[node name="StageHud" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("2_dreamy_theme")
+script = ExtResource("1_stage_hud")
+
+[node name="Panel" type="PanelContainer" parent="."]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 296.0
+offset_bottom = 16.0
+
+[node name="Content" type="VBoxContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="Panel/Content"]
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+text = "Stroll"
+horizontal_alignment = 1
+
+[node name="BackButton" type="Button" parent="Panel/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Back to Character Creation"
+
+[node name="Separator" type="HSeparator" parent="Panel/Content"]
+layout_mode = 2
+
+[node name="MoveSpeedRow" type="HBoxContainer" parent="Panel/Content"]
+layout_mode = 2
+
+[node name="MoveSpeedLabel" type="Label" parent="Panel/Content/MoveSpeedRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"SectionHeader"
+text = "Move Speed"
+
+[node name="MoveSpeedValue" type="Label" parent="Panel/Content/MoveSpeedRow"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="MoveSpeedSlider" type="HSlider" parent="Panel/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+min_value = 0.1
+max_value = 3.0
+step = 0.01
+value = 1.0
+
+[node name="PlaybackRow" type="HBoxContainer" parent="Panel/Content"]
+layout_mode = 2
+
+[node name="PlaybackLabel" type="Label" parent="Panel/Content/PlaybackRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Raise if the feet slide backward, lower if they slide forward."
+mouse_filter = 1
+theme_type_variation = &"SectionHeader"
+text = "Walk Playback"
+
+[node name="PlaybackValue" type="Label" parent="Panel/Content/PlaybackRow"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="PlaybackSlider" type="HSlider" parent="Panel/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+min_value = 0.5
+max_value = 1.5
+step = 0.01
+value = 1.0
+
+[node name="StrideLabel" type="Label" parent="Panel/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HintLabel"
+autowrap_mode = 3
+
+[node name="HintLabel" type="Label" parent="Panel/Content"]
+layout_mode = 2
+theme_type_variation = &"HintLabel"
+text = "WASD / left stick to move
+Right-drag to orbit, wheel to zoom"
