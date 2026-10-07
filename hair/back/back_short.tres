@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="OutfitItem" format=3 uid="uid://cft8kp1wgenxd"]
+
+[ext_resource type="Script" uid="uid://cox8rdaau8r6l" path="res://customization/outfit_item.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://ippgd2mdmut5" path="res://hair/back/back_short.glb" id="2_scene"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"back_short"
+display_name = "Short"
+slot = 7
+scene = ExtResource("2_scene")
+tintable = false
+tint_group = &"hair"
+texture_base_color = Color(0.7647, 0.7647, 0.7647, 1)

@@ -8,6 +8,8 @@
 // Tinting: texels equal to `texture_base_color` become exactly `tint.rgb`;
 // darker/lighter texels (painted shading, highlights) keep their relative value.
 // `tint.a` blends from the untouched texture (0.0) to fully tinted (1.0).
+// An optional `tint_mask` limits tinting to its white texels (e.g. only the
+// irises of an eye texture, keeping outlines and highlights untouched).
 //
 // Body masking: each worn garment can supply a hide mask painted over the
 // same UVs (white = hidden). Pixels white in any of the first
@@ -22,6 +24,8 @@ uniform sampler2D albedo_texture : source_color, filter_nearest_mipmap, hint_def
 /** The texture's main color, i.e. the value that maps exactly to the tint. */
 uniform vec3 texture_base_color : source_color = vec3(1.0);
 instance uniform vec4 tint : source_color = vec4(1.0, 1.0, 1.0, 0.0);
+/** Where the tint applies, over the same UVs: white = tinted, black = kept. */
+uniform sampler2D tint_mask : filter_nearest, hint_default_white;
 
 group_uniforms body_hiding;
 /** Set at runtime by the Wardrobe from the worn items' hide masks. */
@@ -45,7 +49,8 @@ void fragment() {
 	}
 	vec3 texel = texture(albedo_texture, UV).rgb;
 	vec3 tinted = texel / max(texture_base_color, vec3(0.001)) * tint.rgb;
-	ALBEDO = clamp(mix(texel, tinted, tint.a), 0.0, 1.0);
+	float tint_amount = tint.a * texture(tint_mask, UV).r;
+	ALBEDO = clamp(mix(texel, tinted, tint_amount), 0.0, 1.0);
 	ROUGHNESS = 1.0;
 	SPECULAR = 0.0;
 }

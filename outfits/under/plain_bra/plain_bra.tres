@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="OutfitItem" format=3 uid="uid://cnd67xkcm8tv1"]
+
+[ext_resource type="Script" uid="uid://cox8rdaau8r6l" path="res://customization/outfit_item.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://ldl2ks7ot0qf" path="res://outfits/under/plain_bra/plain_bra.glb" id="2_scene"]
+[ext_resource type="Resource" uid="uid://bn2lhyafaaveo" path="res://characters/mannequin/doll_hide_mask_body.tres" id="3_hide_mask_body"]
+[ext_resource type="Texture2D" uid="uid://bqoejel513is4" path="res://outfits/under/plain_bra/plain_bra_hide_mask.png" id="9_hide_mask"]
+[ext_resource type="Texture2D" uid="uid://cux3g1044x1i5" path="res://outfits/under/plain_bra/plain_bra_covered_by_school_top.png" id="20_covered_school_top"]
+[ext_resource type="Texture2D" uid="uid://clwv3bio6b6mv" path="res://outfits/under/plain_bra/plain_bra_covered_by_sundress_top.png" id="21_covered_sundress_top"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"plain_bra"
+display_name = "Plain Bra"
+slot = 5
+scene = ExtResource("2_scene")
+hide_mask = ExtResource("9_hide_mask")
+layer = 0
+covered_masks = Dictionary[StringName, Texture2D]({
+&"school_top": ExtResource("20_covered_school_top"),
+&"sundress_top": ExtResource("21_covered_sundress_top")
+})
+hide_mask_body = ExtResource("3_hide_mask_body")

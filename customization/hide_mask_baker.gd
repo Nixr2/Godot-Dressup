@@ -1,16 +1,18 @@
 @tool
 class_name HideMaskBaker
 extends RefCounted
-## Bakes the skin an [OutfitItem] hugs into a black/white mask over the body UVs.
+## Bakes what an [OutfitItem] covers into a black/white mask over the UVs of
+## the surface beneath it: the body's skin, or a garment on a lower
+## [member OutfitItem.layer] (e.g. a swimsuit under a shirt).
 ##
-## For every skin texel, a short ray is cast along the skin normal, from
-## [member OutfitItem.hide_depth] inside the skin to
+## For every texel of the surface beneath, a short ray is cast along its
+## normal, from [member OutfitItem.hide_depth] inside to
 ## [member OutfitItem.hide_distance] outside it. If it hits the garment, the
 ## texel is hidden (white). Loose parts (a flared skirt over the hips) are
-## further away than the ray reaches, so the skin under them stays visible;
-## tight parts (a waistband) and anything the body pokes through are hidden.
+## further away than the ray reaches, so what's under them stays visible;
+## tight parts (a waistband) and anything that pokes through are hidden.
 ##
-## Both scenes are read in their bind pose, with the item's
+## All scenes are read in their bind pose, with the covering item's
 ## [member OutfitItem.shape_key_overrides] applied to matching shape keys.
 
 const _HIDDEN := 255
@@ -19,41 +21,75 @@ const _HIDDEN := 255
 const _PADDING_PIXELS := 2
 
 
-## Returns [param item]'s hide mask as an L8 image, white where skin is hidden.
+## Returns [param item]'s body hide mask as an L8 image, white where skin is
+## hidden.
 static func bake(item: OutfitItem) -> Image:
 	var body_settings := item.hide_mask_body
-	var body: Node = body_settings.scene.instantiate()
+	return _bake(item, body_settings.scene, body_settings.skin_material, body_settings.resolution)
+
+
+## Returns the mask of what [param item] covers of [param under], over
+## [param under]'s UVs, as an L8 image.
+static func bake_over(item: OutfitItem, under: OutfitItem) -> Image:
+	return _bake(item, under.scene, null, item.hide_mask_body.resolution)
+
+
+## Saves [param image] as a PNG at [param path]. In the editor, also imports
+## it and returns the texture; elsewhere returns null.
+static func save_mask(image: Image, path: String) -> Texture2D:
+	var error := image.save_png(path)
+	if error != OK:
+		push_error("Couldn't save hide mask to '%s': %s" % [path, error_string(error)])
+		return null
+	print("Baked hide mask %s" % path)
+	if not Engine.is_editor_hint():
+		return null
+	# Editor classes are looked up dynamically: they don't exist in exported games.
+	var file_system: Object = Engine.get_singleton(&"EditorInterface").get_resource_filesystem()
+	file_system.update_file(path)
+	file_system.reimport_files(PackedStringArray([path]))
+	return load(path)
+
+
+## Masks the parts of [param target_scene] (only surfaces using
+## [param target_material], if given) that [param item] covers.
+static func _bake(
+		item: OutfitItem, target_scene: PackedScene, target_material: Material, size: int
+) -> Image:
+	var target: Node = target_scene.instantiate()
 	var garment: Node = item.scene.instantiate()
 	var shape_weights := item.shape_key_overrides
 	var garment_triangles := _collect_triangles(garment, null, shape_weights)
-	var body_triangles := _collect_triangles(body, body_settings.skin_material, shape_weights)
-	body.free()
+	var target_triangles := _collect_triangles(target, target_material, shape_weights)
+	target.free()
 	garment.free()
 
-	var size := body_settings.resolution
 	var hidden := PackedByteArray()
 	hidden.resize(size * size)
 	var covered := PackedByteArray()
 	covered.resize(size * size)
-	if garment_triangles.positions.is_empty() or body_triangles.positions.is_empty():
-		push_warning("Hide mask for '%s' is empty: no garment or skin geometry found." % item.id)
+	if garment_triangles.positions.is_empty() or target_triangles.positions.is_empty():
+		push_warning("Hide mask for '%s' is empty: no geometry found." % item.id)
 		return Image.create_from_data(size, size, false, Image.FORMAT_L8, hidden)
 
 	var reach := maxf(item.hide_distance, item.hide_depth)
 	var grid := _TriangleGrid.new(garment_triangles.positions, maxf(reach * 2.0, 0.005), reach)
 	var garment_bounds := grid.bounds.grow(reach)
-	var positions := body_triangles.positions
-	var normals := body_triangles.normals
-	var uvs := body_triangles.uvs
+	var ray := Vector2(item.hide_depth, item.hide_distance)
+	var positions := target_triangles.positions
+	var normals := target_triangles.normals
+	var uvs := target_triangles.uvs
 	for i in range(0, positions.size(), 3):
 		if not _triangle_bounds(positions, i).intersects(garment_bounds):
 			continue
-		_rasterize_triangle(i, positions, normals, uvs, size, grid, item, hidden, covered)
+		_rasterize_triangle(i, positions, normals, uvs, size, grid, ray, hidden, covered)
 
 	_pad_islands(hidden, covered, size)
 	return Image.create_from_data(size, size, false, Image.FORMAT_L8, hidden)
 
 
+## Rasterizes triangle [param i] into the mask. [param ray] is how far each
+## texel's ray reaches (inside, outside) along the surface normal.
 static func _rasterize_triangle(
 		i: int,
 		positions: PackedVector3Array,
@@ -61,7 +97,7 @@ static func _rasterize_triangle(
 		uvs: PackedVector2Array,
 		size: int,
 		grid: _TriangleGrid,
-		item: OutfitItem,
+		ray: Vector2,
 		hidden: PackedByteArray,
 		covered: PackedByteArray,
 ) -> void:
@@ -94,8 +130,8 @@ static func _rasterize_triangle(
 				continue
 			var point := positions[i] * w0 + positions[i + 1] * w1 + positions[i + 2] * w2
 			var normal := (normals[i] * w0 + normals[i + 1] * w1 + normals[i + 2] * w2).normalized()
-			var inside := point - normal * item.hide_depth
-			var outside := point + normal * item.hide_distance
+			var inside := point - normal * ray.x
+			var outside := point + normal * ray.y
 			if grid.segment_hits(inside, outside):
 				hidden[index] = _HIDDEN
 

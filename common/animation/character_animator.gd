@@ -1,21 +1,26 @@
 class_name CharacterAnimator
 extends AnimationTree
 ## Plays the character's base animation (idle or a [BodyPose]), blends in a
-## stride-matched walk, and layers independent left/right arm poses on top.
+## stride-matched walk and jog, and layers independent left/right arm poses on
+## top.
 ##
 ## The blend tree is built on ready:
 ## [codeblock lang=text]
-## Base ──────────────────┐
-## (idle / body poses)    ├─► Locomotion ─► LeftArmBlend ─► RightArmBlend ─► output
-## Walk ─► WalkTimeScale ─┘                    ▲                ▲
-##                                   LeftArmTransition  RightArmTransition
+## Base ───────────────────────────┐
+## (idle / body poses)             ├─► Locomotion ─► LeftArmBlend ─► RightArmBlend ─► output
+## Walk ─► WalkTimeScale ─┐        │                     ▲               ▲
+##                        ├─► Gait ┘           LeftArmTransition  RightArmTransition
+## Jog ──► JogTimeScale ──┘
 ## [/codeblock]
 ## Arm blends are filtered to one arm's bones, so an arm takes its pose while
-## the rest of the body keeps playing the base or walk.
+## the rest of the body keeps playing the base or locomotion.
 ##
-## Stride matching: the walk's natural ground speed ([member stride_speed]) is
-## measured from how fast the planted feet slide, and the walk plays at
-## [code]move speed / stride speed[/code] so the feet never glide.
+## Stride matching: each gait's natural ground speed ([member stride_speed],
+## [member jog_stride_speed]) is measured from how fast the planted feet
+## slide, and it plays at [code]move speed / stride speed[/code] so the feet
+## never glide. Between the two speeds the walk blends into the jog; both then
+## run at a shared cycle rate, with the jog offset so its footfalls line up
+## with the walk's, so the legs never scissor mid-blend.
 ##
 ## Animations are exported separately from the model (.glb files imported
 ## with "Import As: Animation Library"). Skeleton tracks are re-pointed at
@@ -25,7 +30,7 @@ const IDLE_INPUT := &"idle"
 const SIDES: Array[StringName] = [&"Left", &"Right"]
 const STRIDE_SAMPLES := 120
 ## Fraction of a contact bone's height range treated as touching the ground.
-const CONTACT_HEIGHT_FRACTION := 0.3
+const CONTACT_HEIGHT_FRACTION := 0.1
 
 @export var skeleton: Skeleton3D
 ## Merged into one library; animation names must be unique across them.
@@ -41,13 +46,17 @@ const CONTACT_HEIGHT_FRACTION := 0.3
 
 @export_group("Locomotion")
 @export var walk_animation: StringName = &"walk"
+## Optional faster gait, blended in above the walk's speed.
+@export var jog_animation: StringName = &"jog"
 ## Lowest bone of each foot (the part that touches the ground), used to
-## measure the walk's stride speed.
+## measure stride speeds. The first one also lines up the gaits' footfalls.
 @export var contact_bones: Array[StringName] = [&"toes_01.l", &"toes_01.r"]
 ## Natural ground speed of the walk in m/s. 0 = measure it from the feet.
 @export_range(0.0, 5.0, 0.01, "or_greater") var stride_speed_override := 0.0
-## Multiplies the walk's playback rate. Raise it if the feet slide backward,
-## lower it if they slide forward.
+## Natural ground speed of the jog in m/s. 0 = measure it from the feet.
+@export_range(0.0, 10.0, 0.01, "or_greater") var jog_stride_speed_override := 0.0
+## Multiplies the walk and jog playback rate. Raise it if the feet slide
+## backward, lower it if they slide forward.
 @export_range(0.25, 2.0, 0.01) var walk_playback_multiplier := 1.0
 ## Movement speed (m/s) at which the walk is fully blended in.
 @export_range(0.01, 1.0, 0.01) var walk_blend_speed := 0.15
@@ -56,12 +65,16 @@ const CONTACT_HEIGHT_FRACTION := 0.3
 
 ## The walk's natural ground speed in m/s, measured or overridden.
 var stride_speed := 0.0
+## The jog's natural ground speed in m/s, measured or overridden. 0 = no jog.
+var jog_stride_speed := 0.0
 
 var _body_pose: BodyPose
 var _arm_pose: ArmPose
 var _move_speed := 0.0
 var _has_walk := false
+var _has_jog := false
 var _locomotion_amount := 0.0
+var _gait_amount := 0.0
 var _arm_amounts: Dictionary[StringName, float] = { &"Left": 0.0, &"Right": 0.0 }
 var _arm_targets: Dictionary[StringName, float] = { &"Left": 0.0, &"Right": 0.0 }
 var _arm_inputs: Dictionary[StringName, Array] = {}
@@ -84,6 +97,14 @@ func _ready() -> void:
 		stride_speed = stride_speed_override
 		if is_zero_approx(stride_speed):
 			stride_speed = measure_stride_speed(walk_animation)
+	if _has_walk and has_animation(jog_animation):
+		jog_stride_speed = jog_stride_speed_override
+		if is_zero_approx(jog_stride_speed):
+			jog_stride_speed = measure_stride_speed(jog_animation)
+		_has_jog = stride_speed > 0.0 and jog_stride_speed > stride_speed
+		if not _has_jog:
+			push_warning("CharacterAnimator: the jog must be faster than the walk; jog disabled.")
+			jog_stride_speed = 0.0
 
 	tree_root = _build_tree(idle)
 	active = true
@@ -96,10 +117,7 @@ func _process(delta: float) -> void:
 		var target := clampf(_move_speed / walk_blend_speed, 0.0, 1.0)
 		_locomotion_amount = _step_toward(_locomotion_amount, target, delta, locomotion_blend_time)
 		set(&"parameters/Locomotion/blend_amount", _locomotion_amount)
-		var time_scale := 1.0
-		if stride_speed > 0.0 and _move_speed > 0.01:
-			time_scale = _move_speed / stride_speed * walk_playback_multiplier
-		set(&"parameters/WalkTimeScale/scale", time_scale)
+		_update_gait(delta)
 	for side in SIDES:
 		if not _arm_inputs.has(side):
 			continue
@@ -109,7 +127,8 @@ func _process(delta: float) -> void:
 		set("parameters/%sArmBlend/blend_amount" % side, _arm_amounts[side])
 
 
-## Horizontal movement speed in m/s; drives the walk blend and playback rate.
+## Horizontal movement speed in m/s; drives the walk/jog blend and playback
+## rate.
 func set_move_speed(speed: float) -> void:
 	_move_speed = maxf(speed, 0.0)
 
@@ -150,37 +169,53 @@ func measure_stride_speed(animation_name: StringName) -> float:
 	var distance := 0.0
 	var duration := 0.0
 	for bone_name in contact_bones:
-		var bone := skeleton.find_bone(bone_name)
-		if bone < 0:
-			push_warning("CharacterAnimator: contact bone '%s' not found." % bone_name)
-			continue
-		var positions: Array[Vector3] = []
-		for i in STRIDE_SAMPLES + 1:
-			positions.append(_sample_bone_transform(animation, tracks, bone, i * step).origin)
-		var lowest := INF
-		var highest := -INF
-		for position in positions:
-			lowest = minf(lowest, position.y)
-			highest = maxf(highest, position.y)
-		var contact_height := lowest + (highest - lowest) * CONTACT_HEIGHT_FRACTION
-		# Scan the loop twice so a contact spanning the loop point is whole;
-		# count each contact once, by where it starts within the first cycle.
-		var contact_start := -1
-		for i in STRIDE_SAMPLES * 2 + 1:
-			var touching := positions[i % STRIDE_SAMPLES].y <= contact_height
-			if touching and contact_start < 0:
-				contact_start = i
-			elif not touching and contact_start >= 0:
-				if contact_start > 0 and contact_start <= STRIDE_SAMPLES:
-					var first := positions[contact_start % STRIDE_SAMPLES]
-					var last := positions[(i - 1) % STRIDE_SAMPLES]
-					distance += Vector2(last.x - first.x, last.z - first.z).length()
-					duration += (i - 1 - contact_start) * step
-				contact_start = -1
+		var positions := _sample_contact_bone(animation, tracks, bone_name)
+		for contact in _find_contacts(positions):
+			var first := positions[contact.x % STRIDE_SAMPLES]
+			var last := positions[contact.y % STRIDE_SAMPLES]
+			distance += Vector2(last.x - first.x, last.z - first.z).length()
+			duration += (contact.y - contact.x) * step
 	if is_zero_approx(duration):
 		push_warning("CharacterAnimator: couldn't measure stride speed of '%s'." % animation_name)
 		return 0.0
 	return distance / duration * skeleton.global_basis.get_scale().x
+
+
+## Where in [param animation_name]'s cycle (0-1) the first contact bone
+## touches down, or 0 if it never does.
+func measure_contact_phase(animation_name: StringName) -> float:
+	var animation := get_animation(animation_name)
+	var tracks := _index_bone_tracks(animation)
+	var contacts := _find_contacts(_sample_contact_bone(animation, tracks, contact_bones[0]))
+	if contacts.is_empty():
+		return 0.0
+	return float(contacts[0].x % STRIDE_SAMPLES) / STRIDE_SAMPLES
+
+
+## Blends between walk and jog by speed and scales both so the feet stay
+## planted. While blended, both play the same fraction of their cycle per
+## second, so their aligned footfalls stay in step.
+func _update_gait(delta: float) -> void:
+	var walk_length := get_animation(walk_animation).length
+	var walk_cycle_rate := 1.0 / walk_length
+	if stride_speed > 0.0 and _move_speed > 0.01:
+		walk_cycle_rate = _move_speed / stride_speed / walk_length
+	if not _has_jog:
+		var walk_scale := walk_cycle_rate * walk_length * walk_playback_multiplier
+		set(&"parameters/WalkTimeScale/scale", walk_scale)
+		return
+
+	var target := clampf(inverse_lerp(stride_speed, jog_stride_speed, _move_speed), 0.0, 1.0)
+	_gait_amount = _step_toward(_gait_amount, target, delta, locomotion_blend_time)
+	set(&"parameters/Gait/blend_amount", _gait_amount)
+	var jog_length := get_animation(jog_animation).length
+	var jog_cycle_rate := 1.0 / jog_length
+	if _move_speed > 0.01:
+		jog_cycle_rate = _move_speed / jog_stride_speed / jog_length
+	var cycle_rate := lerpf(walk_cycle_rate, jog_cycle_rate, _gait_amount)
+	cycle_rate *= walk_playback_multiplier
+	set(&"parameters/WalkTimeScale/scale", cycle_rate * walk_length)
+	set(&"parameters/JogTimeScale/scale", cycle_rate * jog_length)
 
 
 func _request_arm(side: StringName, animation: StringName) -> void:
@@ -212,9 +247,20 @@ func _build_tree(idle: StringName) -> AnimationNodeBlendTree:
 		tree.add_node(&"Walk", _animation_node(walk_animation))
 		tree.add_node(&"WalkTimeScale", AnimationNodeTimeScale.new())
 		tree.connect_node(&"WalkTimeScale", 0, &"Walk")
+		var moving := &"WalkTimeScale"
+		if _has_jog:
+			tree.add_node(&"Jog", _jog_node())
+			tree.add_node(&"JogTimeScale", AnimationNodeTimeScale.new())
+			tree.connect_node(&"JogTimeScale", 0, &"Jog")
+			var gait := AnimationNodeBlend2.new()
+			gait.sync = true # Keeps both gaits advancing so they stay in step.
+			tree.add_node(&"Gait", gait)
+			tree.connect_node(&"Gait", 0, &"WalkTimeScale")
+			tree.connect_node(&"Gait", 1, &"JogTimeScale")
+			moving = &"Gait"
 		tree.add_node(&"Locomotion", AnimationNodeBlend2.new())
 		tree.connect_node(&"Locomotion", 0, previous)
-		tree.connect_node(&"Locomotion", 1, &"WalkTimeScale")
+		tree.connect_node(&"Locomotion", 1, moving)
 		previous = &"Locomotion"
 
 	for side in SIDES:
@@ -276,6 +322,7 @@ func _get_looping_animations(idle: StringName) -> Array[StringName]:
 	var looping: Array[StringName] = [idle]
 	if _has_walk:
 		looping.append(walk_animation)
+		looping.append(jog_animation)
 	for pose in body_poses:
 		looping.append(pose.animation)
 	for pose in arm_poses:
@@ -288,6 +335,20 @@ func _get_looping_animations(idle: StringName) -> Array[StringName]:
 	return existing
 
 
+## The jog, started at an offset so its first footfall comes at the same
+## point of its cycle as the walk's.
+func _jog_node() -> AnimationNodeAnimation:
+	var node := _animation_node(jog_animation)
+	var length := get_animation(jog_animation).length
+	var phase := measure_contact_phase(jog_animation) - measure_contact_phase(walk_animation)
+	node.use_custom_timeline = true
+	node.timeline_length = length
+	node.stretch_time_scale = false
+	node.start_offset = wrapf(phase, 0.0, 1.0) * length
+	node.loop_mode = Animation.LOOP_LINEAR
+	return node
+
+
 func _animation_node(animation: StringName) -> AnimationNodeAnimation:
 	var node := AnimationNodeAnimation.new()
 	node.animation = animation
@@ -298,6 +359,48 @@ func _step_toward(current: float, target: float, delta: float, duration: float) 
 	if is_zero_approx(duration):
 		return target
 	return move_toward(current, target, delta / duration)
+
+
+## Skeleton-space positions of [param bone_name] over one cycle, at
+## [constant STRIDE_SAMPLES] + 1 evenly spaced times.
+func _sample_contact_bone(
+		animation: Animation, tracks: Dictionary[int, Dictionary], bone_name: StringName
+) -> PackedVector3Array:
+	var positions := PackedVector3Array()
+	var bone := skeleton.find_bone(bone_name)
+	if bone < 0:
+		push_warning("CharacterAnimator: contact bone '%s' not found." % bone_name)
+		return positions
+	var step := animation.length / STRIDE_SAMPLES
+	for i in STRIDE_SAMPLES + 1:
+		positions.append(_sample_bone_transform(animation, tracks, bone, i * step).origin)
+	return positions
+
+
+## Ground contacts in [param positions] as (first, last) sample indices; the
+## last can pass [constant STRIDE_SAMPLES] when a contact spans the loop point.
+func _find_contacts(positions: PackedVector3Array) -> Array[Vector2i]:
+	var contacts: Array[Vector2i] = []
+	if positions.is_empty():
+		return contacts
+	var lowest := INF
+	var highest := -INF
+	for position in positions:
+		lowest = minf(lowest, position.y)
+		highest = maxf(highest, position.y)
+	var contact_height := lowest + (highest - lowest) * CONTACT_HEIGHT_FRACTION
+	# Scan the loop twice so a contact spanning the loop point is whole;
+	# count each contact once, by where it starts within the first cycle.
+	var contact_start := -1
+	for i in STRIDE_SAMPLES * 2 + 1:
+		var touching := positions[i % STRIDE_SAMPLES].y <= contact_height
+		if touching and contact_start < 0:
+			contact_start = i
+		elif not touching and contact_start >= 0:
+			if contact_start > 0 and contact_start <= STRIDE_SAMPLES:
+				contacts.append(Vector2i(contact_start, i - 1))
+			contact_start = -1
+	return contacts
 
 
 ## Returns [param root_bone] and all of its descendants.

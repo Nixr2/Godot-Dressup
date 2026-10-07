@@ -7,6 +7,7 @@ extends Node
 ## onto every item bone whose name is in its [SkeletonProfile]. Bones the body
 ## lacks (e.g. skirt chains) stay free for the item's own physics nodes.
 ## Rigid items (hats) are attached to [member skeleton] with a [BoneAttachment3D].
+
 ##
 ## Imported items that still use their original (non-toon) materials are
 ## converted to [member toon_material] so any .glb can be dropped in as-is.
@@ -35,6 +36,7 @@ const MAX_HIDE_MASKS := 8
 var _equipped_items: Dictionary[OutfitItem.Slot, OutfitItem] = {}
 var _equipped_nodes: Dictionary[OutfitItem.Slot, Node3D] = {}
 var _item_tints: Dictionary[StringName, Color] = {}
+var _group_tints: Dictionary[StringName, Color] = {}
 
 
 func _ready() -> void:
@@ -60,7 +62,10 @@ func equip(item: OutfitItem) -> void:
 	_convert_materials(root, item)
 	_equipped_items[item.slot] = item
 	_equipped_nodes[item.slot] = root
-	if item.tintable:
+	if not item.tint_group.is_empty():
+		if _group_tints.has(item.tint_group):
+			_apply_tint(root, _group_tints[item.tint_group])
+	elif item.tintable:
 		set_item_tint(item.slot, _item_tints.get(item.id, item.default_tint))
 	_update_hide_masks()
 	item_equipped.emit(item)
@@ -102,12 +107,20 @@ func get_equipped_meshes() -> Array[MeshInstance3D]:
 ## Recolors the item worn in [param slot], if it is tintable.
 func set_item_tint(slot: OutfitItem.Slot, color: Color) -> void:
 	var item := get_equipped(slot)
-	if item == null or not item.tintable:
+	if item == null or not item.tintable or not item.tint_group.is_empty():
 		return
 
 	_item_tints[item.id] = color
-	for mesh in _find_meshes(_equipped_nodes[slot]):
-		mesh.set_instance_shader_parameter(TINT_PARAMETER, Color(color, 1.0))
+	_apply_tint(_equipped_nodes[slot], color)
+
+
+## Recolors every worn item in tint group [param group] (see
+## [member OutfitItem.tint_group]), and items of that group equipped later.
+func set_group_tint(group: StringName, color: Color) -> void:
+	_group_tints[group] = color
+	for slot: OutfitItem.Slot in _equipped_items:
+		if _equipped_items[slot].tint_group == group:
+			_apply_tint(_equipped_nodes[slot], color)
 
 
 ## Returns the tint of the item worn in [param slot].
@@ -132,23 +145,46 @@ func write_to_appearance(appearance: CharacterAppearance) -> void:
 	appearance.items.assign(_equipped_items.values())
 	appearance.item_tints.clear()
 	for item: OutfitItem in _equipped_items.values():
-		if item.tintable:
+		if item.tintable and item.tint_group.is_empty():
 			appearance.item_tints[item.id] = get_item_tint(item.slot)
 
 
-## Sends the worn items' hide masks to the skin shader.
+## Sends the worn items' hide masks to the skin shader, and each worn item's
+## covered masks (from items worn over it) to that item's materials.
 func _update_hide_masks() -> void:
-	if body_material == null:
-		return
-	var masks: Array[Texture2D] = []
-	for item: OutfitItem in _equipped_items.values():
-		if item.hide_mask:
-			masks.append(item.hide_mask)
+	if body_material:
+		var body_masks: Array[Texture2D] = []
+		for item: OutfitItem in _equipped_items.values():
+			if item.hide_mask:
+				body_masks.append(item.hide_mask)
+		_set_hide_masks(body_material, body_masks)
+
+	for slot: OutfitItem.Slot in _equipped_items:
+		var under := _equipped_items[slot]
+		var masks: Array[Texture2D] = []
+		for over: OutfitItem in _equipped_items.values():
+			if over.layer > under.layer and under.covered_masks.has(over.id):
+				masks.append(under.covered_masks[over.id])
+		for material in _get_toon_materials(_equipped_nodes[slot]):
+			_set_hide_masks(material, masks)
+
+
+func _set_hide_masks(material: ShaderMaterial, masks: Array[Texture2D]) -> void:
 	if masks.size() > MAX_HIDE_MASKS:
-		push_warning("Only the first %d worn hide masks are applied." % MAX_HIDE_MASKS)
+		push_warning("Only the first %d hide masks on a surface are applied." % MAX_HIDE_MASKS)
 		masks.resize(MAX_HIDE_MASKS)
-	body_material.set_shader_parameter(HIDE_MASKS_PARAMETER, masks)
-	body_material.set_shader_parameter(HIDE_MASK_COUNT_PARAMETER, masks.size())
+	material.set_shader_parameter(HIDE_MASKS_PARAMETER, masks)
+	material.set_shader_parameter(HIDE_MASK_COUNT_PARAMETER, masks.size())
+
+
+func _get_toon_materials(root: Node) -> Array[ShaderMaterial]:
+	var materials: Array[ShaderMaterial] = []
+	for mesh in _find_meshes(root):
+		for surface in mesh.get_surface_override_material_count():
+			var material := mesh.get_active_material(surface) as ShaderMaterial
+			if material and material.shader == toon_material.shader and not material in materials:
+				materials.append(material)
+	return materials
 
 
 ## Moves the item's own [Skeleton3D], with its meshes and any physics nodes
@@ -195,15 +231,22 @@ func _convert_materials(root: Node, item: OutfitItem) -> void:
 	for mesh in _find_meshes(root):
 		for surface in mesh.mesh.get_surface_count():
 			var source := mesh.get_active_material(surface)
-			if source is ShaderMaterial and source.shader == toon_material.shader:
-				continue
 			if not converted.has(source):
-				converted[source] = _create_toon_material(source, item)
+				if source is ShaderMaterial and source.shader == toon_material.shader:
+					converted[source] = source.duplicate()
+				else:
+					converted[source] = _create_toon_material(source, item)
 			mesh.set_surface_override_material(surface, converted[source])
 
 
+func _apply_tint(root: Node, color: Color) -> void:
+	for mesh in _find_meshes(root):
+		mesh.set_instance_shader_parameter(TINT_PARAMETER, Color(color, 1.0))
+
+
 func _create_toon_material(source: Material, item: OutfitItem) -> ShaderMaterial:
-	var material: ShaderMaterial = toon_material.duplicate()
+	var template := item.material_template if item.material_template else toon_material
+	var material: ShaderMaterial = template.duplicate()
 	material.set_shader_parameter(&"texture_base_color", item.texture_base_color)
 	if source is BaseMaterial3D:
 		material.set_shader_parameter(&"albedo_texture", source.albedo_texture)

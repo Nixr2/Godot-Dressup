@@ -20,9 +20,11 @@ Files and folders are `snake_case`; nodes and `class_name`s are `PascalCase`.
 | `main/` | The entry scene. Wires the UI to the 3D world and swaps between character creation and a stage. |
 | `characters/mannequin/` | The base character: `doll.glb`, its textures and materials, skeleton profile, shape key rules, animations (`animations/`), poses (`arm_poses/`, `body_poses/`) and the hide mask body. |
 | `customization/` | The reusable customization module: the wardrobe, skin/hair tinting, shape keys, saved appearances and hide mask baking. Contains no scenes, only scripts and the default skin palette. |
-| `outfits/` | One folder per garment, grouped by slot (`tops/`, `bottoms/`, `hats/`). Each holds the `.glb`, its textures, its `OutfitItem` `.tres` and its baked hide mask. `outfit_catalog.tres` lists what players can pick. |
-| `common/` | Code and assets shared by several features: animation (`animation/`), import scripts (`import/`), the toon shader (`shaders/`) and its base material (`materials/`). |
-| `stages/` | 3D places: the `dressing_room/` (character creation) and the walkable stages (`bedroom/`, `playground/`), which share `walkable_stage.gd`. |
+| `hair/` | Front (`front/`) and back (`back/`) hair pieces, each a `.glb` plus its `OutfitItem`, and `hair_catalog.tres`. |
+| `decal_overlays/` | Transparent face decals (e.g. blush) worn in the Face Overlay slot. |
+| `outfits/` | One folder per garment, grouped by slot (`tops/`, `bottoms/`, `under/`, `leg/`, `feet/`, `hats/`). Each holds the `.glb`, its textures, its `OutfitItem` `.tres` and its baked hide mask. `outfit_catalog.tres` lists what players can pick. |
+| `common/` | Code and assets shared by several features: animation (`animation/`), outdoor environment (`environment/`: grass field, day/night cycle), import scripts (`import/`), the toon shader (`shaders/`) and its base material (`materials/`). |
+| `stages/` | 3D places: the `dressing_room/` (character creation) and the walkable stages (`meadow/`, the one Play opens; `bedroom/`; `playground/`), which share `walkable_stage.gd`. |
 | `player/` | The playable character body and its third-person camera. |
 | `ui/` | The character creation menu, the stage HUD and the shared dreamy `theme/`. |
 | `addons/` | Third-party editor plugins (currently empty). |
@@ -34,6 +36,7 @@ Files and folders are `snake_case`; nodes and `class_name`s are `PascalCase`.
 | [main/main.tscn](../main/main.tscn) (main scene) | `main.gd` | Instances the dressing room and the customization menu. |
 | [characters/mannequin/mannequin.tscn](../characters/mannequin/mannequin.tscn) | `Mannequin` | `Wardrobe`, `BodyCustomizer`, `ShapeKeyController`, `CharacterAnimator`, `LookAtController` (one child node each). |
 | [stages/dressing_room/dressing_room.tscn](../stages/dressing_room/dressing_room.tscn) | `DressingRoom` | `OrbitCamera` with its `CameraFocus` presets; instances the mannequin. |
+| [stages/meadow/meadow.tscn](../stages/meadow/meadow.tscn) (opened by Play) | `WalkableStage` | `GrassField`, `DayNightCycle` driving the Sun and Moon lights and the sky; instances the player and the stage HUD. |
 | [stages/bedroom/bedroom.tscn](../stages/bedroom/bedroom.tscn), [stages/playground/playground.tscn](../stages/playground/playground.tscn) | `WalkableStage` | Instance the player and the stage HUD. |
 | [player/player.tscn](../player/player.tscn) | `Player` | `ThirdPersonCamera`; instances the mannequin. |
 | [ui/customization_menu/customization_menu.tscn](../ui/customization_menu/customization_menu.tscn) | `CustomizationMenu` | |
@@ -53,15 +56,29 @@ CustomizationMenu ──signals──► main.gd ──calls──► Mannequin 
 ```
 
 - **Play:** `main.gd` reads the look with `Mannequin.get_appearance()`,
-  removes character creation from the tree (keeping it in memory), adds the
-  stage, and calls `WalkableStage.setup()` to dress the player's mannequin
-  with it. "Back" reverses this.
+  removes character creation from the tree (keeping it in memory), dresses the
+  new stage's mannequin with `WalkableStage.setup()`, then adds the stage. "Back" reverses this.
 - **Clothing:** `Wardrobe.equip()` moves the garment's own skeleton under
   the `ClothingRig` (a `RetargetModifier3D`) so it follows the body, converts
   its materials to the toon shader and sends its hide mask to the skin shader.
 - **Hide masks:** `OutfitItem.bake_hide_mask()` (the "Bake Hide Mask" button
   in the Inspector) runs `HideMaskBaker.bake()` and saves
-  `<id>_hide_mask.png` next to the item.
+  `<id>_hide_mask.png` next to the item. Items also hide what they cover of
+  worn items on lower layers (`OutfitItem.layer`, e.g. a swimsuit under a
+  shirt): `OutfitCatalog.bake_hide_masks()` (the catalog's "Bake Hide Masks"
+  button) bakes every item's body mask plus `<under>_covered_by_<over>.png`
+  for each overlapping pair, and the Wardrobe applies them to the lower
+  item's materials.
+- **Hair:** hair is split into front and back pieces, each an `OutfitItem` in
+  the `HAIR_FRONT` / `HAIR_BACK` slots, listed in `hair/hair_catalog.tres`
+  and shown in the Hair card. They share the `hair` tint group, so
+  `BodyCustomizer.set_hair_color()` recolors every piece through
+  `Wardrobe.set_group_tint()`.
+- **Day/night:** `DayNightCycle` advances `time_of_day`, aims the Sun and Moon
+  lights, and samples its gradients for the sky, sun and ambient colors. The
+  character's toon shader only takes ambient light, so the ambient gradient is
+  what tints her. `WalkableStage` gives the HUD time controls when the stage
+  has a node named `DayNightCycle`.
 - **Shape keys:** `ShapeKeyController` merges body sliders, expressions,
   clothing overrides and blinking into blend shape weights every frame that
   something changes.
@@ -86,7 +103,11 @@ as `.tres` files:
 
 | Shader | Used by | Purpose |
 |---|---|---|
-| [common/shaders/toon.gdshader](../common/shaders/toon.gdshader) | Character, hair, eyes and all clothing | Ambient-only flat shading, crisp pixel-art sampling, per-instance `tint`, and up to 8 clothing hide masks (`hide_masks`) on the skin. |
+| [common/shaders/toon.gdshader](../common/shaders/toon.gdshader) | Character, hair, eyes and all clothing | Ambient-only flat shading, crisp pixel-art sampling, per-instance `tint` (optionally limited by a `tint_mask`, e.g. to the irises), and up to 8 clothing hide masks (`hide_masks`) on the skin. |
+| [common/shaders/toon_overlay.gdshader](../common/shaders/toon_overlay.gdshader) | Face decals | Transparent version of the toon look, blended over the skin. |
+| [common/shaders/grass.gdshader](../common/shaders/grass.gdshader) | Meadow grass (`GrassField`) | Wind and gusts, bending away from the player, root-to-tip shading. |
+| [common/shaders/meadow_ground.gdshader](../common/shaders/meadow_ground.gdshader) | Meadow ground | Soft non-tiling green patches under the grass. |
+| [common/shaders/day_night_sky.gdshader](../common/shaders/day_night_sky.gdshader) | Meadow sky | Gradient, sun and moon disks, clouds and stars; colors set by `DayNightCycle`. |
 | [common/shaders/grid_floor.gdshader](../common/shaders/grid_floor.gdshader) | Playground floor | Procedural grid. |
 
 # Script reference
@@ -103,9 +124,9 @@ starting with `_`, private by convention).
 
 Entry point. Wires the GUI to the 3D world (signals up, calls down) and swaps between character creation and a walkable stage.
 
-**Engine callbacks:** [`_ready`](../main/main.gd#L14), [`_notification`](../main/main.gd#L59)
+**Engine callbacks:** [`_ready`](../main/main.gd#L14), [`_notification`](../main/main.gd#L61)
 
-**Internal:** [`_update_shape_key_availability`](../main/main.gd#L66), [`_on_item_equipped`](../main/main.gd#L74), [`_on_item_unequipped`](../main/main.gd#L79), [`_on_play_requested`](../main/main.gd#L84), [`_on_stage_exit_requested`](../main/main.gd#L94)
+**Internal:** [`_update_shape_key_availability`](../main/main.gd#L68), [`_on_item_equipped`](../main/main.gd#L76), [`_on_item_unequipped`](../main/main.gd#L81), [`_on_play_requested`](../main/main.gd#L86), [`_on_stage_exit_requested`](../main/main.gd#L96)
 
 ## Characters
 
@@ -128,16 +149,17 @@ Customizable base character: the Doll model plus its Wardrobe, BodyCustomizer, S
 
 [customization/body_customizer.gd](../customization/body_customizer.gd) · extends `Node`
 
-Tints a character's skin and hair.
+Tints a character's skin, hair and eyes.
 
 | Function | Line | Description |
 |---|---|---|
-| `set_skin_tone()` | [26](../customization/body_customizer.gd#L26) | Tints the skin with `palette`'s color for `tone` and `undertone`. |
-| `set_hair_color()` | [33](../customization/body_customizer.gd#L33) | Tints the hair with `color`. |
-| `apply_appearance()` | [39](../customization/body_customizer.gd#L39) | Applies the skin and hair colors of `appearance`. |
-| `write_to_appearance()` | [45](../customization/body_customizer.gd#L45) | Stores the current skin and hair colors in `appearance`. |
+| `set_skin_tone()` | [33](../customization/body_customizer.gd#L33) | Tints the skin with `palette`'s color for `tone` and `undertone`. |
+| `set_hair_color()` | [40](../customization/body_customizer.gd#L40) | Tints the hair with `color`. |
+| `set_eye_color()` | [46](../customization/body_customizer.gd#L46) | Tints the irises with `color`. |
+| `apply_appearance()` | [52](../customization/body_customizer.gd#L52) | Applies the skin, hair and eye colors of `appearance`. |
+| `write_to_appearance()` | [59](../customization/body_customizer.gd#L59) | Stores the current skin, hair and eye colors in `appearance`. |
 
-**Internal:** [`_apply_tint`](../customization/body_customizer.gd#L51), [`_uses_material`](../customization/body_customizer.gd#L57)
+**Internal:** [`_apply_tint`](../customization/body_customizer.gd#L66), [`_uses_material`](../customization/body_customizer.gd#L72)
 
 ### `CharacterAppearance`
 
@@ -149,13 +171,15 @@ A saved look: body colors plus which OutfitItem is worn in each slot.
 
 [customization/hide_mask_baker.gd](../customization/hide_mask_baker.gd) · extends `RefCounted`
 
-Bakes the skin an OutfitItem hugs into a black/white mask over the body UVs.
+Bakes what an OutfitItem covers into a black/white mask over the UVs of the surface beneath it: the body's skin, or a garment on a lower `OutfitItem.layer` (e.g. a swimsuit under a shirt).
 
 | Function | Line | Description |
 |---|---|---|
-| `static bake()` | [23](../customization/hide_mask_baker.gd#L23) | Returns `item`'s hide mask as an L8 image, white where skin is hidden. |
+| `static bake()` | [26](../customization/hide_mask_baker.gd#L26) | Returns `item`'s body hide mask as an L8 image, white where skin is hidden. |
+| `static bake_over()` | [33](../customization/hide_mask_baker.gd#L33) | Returns the mask of what `item` covers of `under`, over `under`'s UVs, as an L8 image. |
+| `static save_mask()` | [39](../customization/hide_mask_baker.gd#L39) | Saves `image` as a PNG at `path`. |
 
-**Internal:** [`_rasterize_triangle`](../customization/hide_mask_baker.gd#L57), [`_pad_islands`](../customization/hide_mask_baker.gd#L103), [`_collect_triangles`](../customization/hide_mask_baker.gd#L126), [`_append_surface`](../customization/hide_mask_baker.gd#L147), [`_triangle_bounds`](../customization/hide_mask_baker.gd#L186), [`_transform_to`](../customization/hide_mask_baker.gd#L191), [`_TriangleGrid._init`](../customization/hide_mask_baker.gd#L216), [`_TriangleGrid.segment_hits`](../customization/hide_mask_baker.gd#L234), [`_TriangleGrid._cell_of`](../customization/hide_mask_baker.gd#L247), [`_TriangleGrid._segment_hits_triangle`](../customization/hide_mask_baker.gd#L251)
+**Internal:** [`_bake`](../customization/hide_mask_baker.gd#L56), [`_rasterize_triangle`](../customization/hide_mask_baker.gd#L93), [`_pad_islands`](../customization/hide_mask_baker.gd#L139), [`_collect_triangles`](../customization/hide_mask_baker.gd#L162), [`_append_surface`](../customization/hide_mask_baker.gd#L183), [`_triangle_bounds`](../customization/hide_mask_baker.gd#L222), [`_transform_to`](../customization/hide_mask_baker.gd#L227), [`_TriangleGrid._init`](../customization/hide_mask_baker.gd#L252), [`_TriangleGrid.segment_hits`](../customization/hide_mask_baker.gd#L270), [`_TriangleGrid._cell_of`](../customization/hide_mask_baker.gd#L283), [`_TriangleGrid._segment_hits_triangle`](../customization/hide_mask_baker.gd#L287)
 
 ### `HideMaskBody`
 
@@ -171,7 +195,8 @@ The list of every OutfitItem a player can choose from.
 
 | Function | Line | Description |
 |---|---|---|
-| `get_items_for_slot()` | [9](../customization/outfit_catalog.gd#L9) | Returns every item that is worn in `slot`. |
+| `get_items_for_slot()` | [11](../customization/outfit_catalog.gd#L11) | Returns every item that is worn in `slot`. |
+| `bake_hide_masks()` | [19](../customization/outfit_catalog.gd#L19) | Bakes every item's body hide mask, plus a covered mask for every pair of skinned items on different layers (what the higher one hides of the lower). |
 
 ### `OutfitItem`
 
@@ -181,7 +206,10 @@ A single wearable piece of clothing or accessory.
 
 | Function | Line | Description |
 |---|---|---|
-| `bake_hide_mask()` | [63](../customization/outfit_item.gd#L63) | Bakes `hide_mask` from the garment's shape and saves it as `<id>_hide_mask.png` next to this resource. |
+| `bake_hide_mask()` | [86](../customization/outfit_item.gd#L86) | Bakes `hide_mask` from the garment's shape and saves it as `<id>_hide_mask.png` next to this resource. |
+| `bake_covered_mask()` | [97](../customization/outfit_item.gd#L97) | Bakes what `over` covers of this item into `covered_masks`, saved as `<id>_covered_by_<over id>.png` next to this resource. |
+| `can_bake()` | [111](../customization/outfit_item.gd#L111) | Whether this item has what baking needs, reporting what's missing if not. |
+| `get_mask_path()` | [122](../customization/outfit_item.gd#L122) | Path of this item's mask named `<id>_<suffix>.png`, next to the resource. |
 
 ### `ShapeKeyController`
 
@@ -243,24 +271,25 @@ Equips, removes and recolors OutfitItems on a character.
 
 | Signal | Line | Description |
 |---|---|---|
-| `item_equipped` | [15](../customization/wardrobe.gd#L15) | Emitted after `item` is put on. |
-| `item_unequipped` | [17](../customization/wardrobe.gd#L17) | Emitted after `item` is taken off. |
+| `item_equipped` | [16](../customization/wardrobe.gd#L16) |  |
+| `item_unequipped` | [18](../customization/wardrobe.gd#L18) | Emitted after `item` is taken off. |
 
 | Function | Line | Description |
 |---|---|---|
-| `equip()` | [48](../customization/wardrobe.gd#L48) | Puts `item` on, replacing whatever is worn in its slot. |
-| `unequip()` | [70](../customization/wardrobe.gd#L70) | Takes off the item worn in `slot`, if any. |
-| `get_equipped()` | [83](../customization/wardrobe.gd#L83) | Returns the item worn in `slot`, or null. |
-| `get_equipped_items()` | [88](../customization/wardrobe.gd#L88) | Returns every worn item. |
-| `get_equipped_meshes()` | [95](../customization/wardrobe.gd#L95) | Returns the meshes of every worn item. |
-| `set_item_tint()` | [103](../customization/wardrobe.gd#L103) | Recolors the item worn in `slot`, if it is tintable. |
-| `get_item_tint()` | [114](../customization/wardrobe.gd#L114) | Returns the tint of the item worn in `slot`. |
-| `apply_appearance()` | [122](../customization/wardrobe.gd#L122) | Replaces everything worn with `appearance`'s items and tints. |
-| `write_to_appearance()` | [131](../customization/wardrobe.gd#L131) | Stores the worn items and their tints in `appearance`. |
+| `equip()` | [50](../customization/wardrobe.gd#L50) | Puts `item` on, replacing whatever is worn in its slot. |
+| `unequip()` | [75](../customization/wardrobe.gd#L75) | Takes off the item worn in `slot`, if any. |
+| `get_equipped()` | [88](../customization/wardrobe.gd#L88) | Returns the item worn in `slot`, or null. |
+| `get_equipped_items()` | [93](../customization/wardrobe.gd#L93) | Returns every worn item. |
+| `get_equipped_meshes()` | [100](../customization/wardrobe.gd#L100) | Returns the meshes of every worn item. |
+| `set_item_tint()` | [108](../customization/wardrobe.gd#L108) | Recolors the item worn in `slot`, if it is tintable. |
+| `set_group_tint()` | [119](../customization/wardrobe.gd#L119) | Recolors every worn item in tint group `group` (see `OutfitItem.tint_group`), and items of that group equipped later. |
+| `get_item_tint()` | [127](../customization/wardrobe.gd#L127) | Returns the tint of the item worn in `slot`. |
+| `apply_appearance()` | [135](../customization/wardrobe.gd#L135) | Replaces everything worn with `appearance`'s items and tints. |
+| `write_to_appearance()` | [144](../customization/wardrobe.gd#L144) | Stores the worn items and their tints in `appearance`. |
 
-**Engine callbacks:** [`_ready`](../customization/wardrobe.gd#L40)
+**Engine callbacks:** [`_ready`](../customization/wardrobe.gd#L42)
 
-**Internal:** [`_update_hide_masks`](../customization/wardrobe.gd#L140), [`_attach_skinned`](../customization/wardrobe.gd#L156), [`_attach_rigid`](../customization/wardrobe.gd#L184), [`_convert_materials`](../customization/wardrobe.gd#L193), [`_create_toon_material`](../customization/wardrobe.gd#L205), [`_find_skeleton`](../customization/wardrobe.gd#L213), [`_shares_bones_with_rig`](../customization/wardrobe.gd#L220), [`_find_meshes`](../customization/wardrobe.gd#L228)
+**Internal:** [`_update_hide_masks`](../customization/wardrobe.gd#L154), [`_set_hide_masks`](../customization/wardrobe.gd#L172), [`_get_toon_materials`](../customization/wardrobe.gd#L180), [`_attach_skinned`](../customization/wardrobe.gd#L192), [`_attach_rigid`](../customization/wardrobe.gd#L220), [`_convert_materials`](../customization/wardrobe.gd#L229), [`_apply_tint`](../customization/wardrobe.gd#L242), [`_create_toon_material`](../customization/wardrobe.gd#L247), [`_find_skeleton`](../customization/wardrobe.gd#L256), [`_shares_bones_with_rig`](../customization/wardrobe.gd#L263), [`_find_meshes`](../customization/wardrobe.gd#L271)
 
 ## Animation
 
@@ -280,20 +309,21 @@ A full-body pose or loop that replaces the idle as the character's base animatio
 
 [common/animation/character_animator.gd](../common/animation/character_animator.gd) · extends `AnimationTree`
 
-Plays the character's base animation (idle or a BodyPose), blends in a stride-matched walk, and layers independent left/right arm poses on top.
+Plays the character's base animation (idle or a BodyPose), blends in a stride-matched walk and jog, and layers independent left/right arm poses on top.
 
 | Function | Line | Description |
 |---|---|---|
-| `set_move_speed()` | [113](../common/animation/character_animator.gd#L113) | Horizontal movement speed in m/s; drives the walk blend and playback rate. |
-| `set_body_pose()` | [118](../common/animation/character_animator.gd#L118) | Cross-fades the base animation to `pose`. |
-| `get_body_pose()` | [127](../common/animation/character_animator.gd#L127) | Returns the active body pose, or null while idling. |
-| `set_arm_pose()` | [132](../common/animation/character_animator.gd#L132) | Cross-fades the arms to `pose`. |
-| `get_arm_pose()` | [139](../common/animation/character_animator.gd#L139) | Returns the active arm pose, or null when the arms follow the body. |
-| `measure_stride_speed()` | [146](../common/animation/character_animator.gd#L146) | Measures how fast `animation`'s feet travel backward while touching the ground, in m/s: net distance / time over each contact. |
+| `set_move_speed()` | [132](../common/animation/character_animator.gd#L132) | Horizontal movement speed in m/s; drives the walk/jog blend and playback rate. |
+| `set_body_pose()` | [137](../common/animation/character_animator.gd#L137) | Cross-fades the base animation to `pose`. |
+| `get_body_pose()` | [146](../common/animation/character_animator.gd#L146) | Returns the active body pose, or null while idling. |
+| `set_arm_pose()` | [151](../common/animation/character_animator.gd#L151) | Cross-fades the arms to `pose`. |
+| `get_arm_pose()` | [158](../common/animation/character_animator.gd#L158) | Returns the active arm pose, or null when the arms follow the body. |
+| `measure_stride_speed()` | [165](../common/animation/character_animator.gd#L165) | Measures how fast `animation`'s feet travel backward while touching the ground, in m/s: net distance / time over each contact. |
+| `measure_contact_phase()` | [186](../common/animation/character_animator.gd#L186) | Where in `animation_name`'s cycle (0-1) the first contact bone touches down, or 0 if it never does. |
 
-**Engine callbacks:** [`_ready`](../common/animation/character_animator.gd#L70), [`_process`](../common/animation/character_animator.gd#L92)
+**Engine callbacks:** [`_ready`](../common/animation/character_animator.gd#L83), [`_process`](../common/animation/character_animator.gd#L113)
 
-**Internal:** [`_request_arm`](../common/animation/character_animator.gd#L186), [`_build_tree`](../common/animation/character_animator.gd#L196), [`_add_transition`](../common/animation/character_animator.gd#L244), [`_collect_arm_inputs`](../common/animation/character_animator.gd#L262), [`_get_looping_animations`](../common/animation/character_animator.gd#L275), [`_animation_node`](../common/animation/character_animator.gd#L291), [`_step_toward`](../common/animation/character_animator.gd#L297), [`_get_bone_chain`](../common/animation/character_animator.gd#L304), [`_index_bone_tracks`](../common/animation/character_animator.gd#L319), [`_sample_bone_transform`](../common/animation/character_animator.gd#L332), [`_bone_path`](../common/animation/character_animator.gd#L356), [`_merge_libraries`](../common/animation/character_animator.gd#L360), [`_retarget_library`](../common/animation/character_animator.gd#L374), [`_find_idle_animation`](../common/animation/character_animator.gd#L396)
+**Internal:** [`_update_gait`](../common/animation/character_animator.gd#L198), [`_request_arm`](../common/animation/character_animator.gd#L221), [`_build_tree`](../common/animation/character_animator.gd#L231), [`_add_transition`](../common/animation/character_animator.gd#L290), [`_collect_arm_inputs`](../common/animation/character_animator.gd#L308), [`_get_looping_animations`](../common/animation/character_animator.gd#L321), [`_jog_node`](../common/animation/character_animator.gd#L340), [`_animation_node`](../common/animation/character_animator.gd#L352), [`_step_toward`](../common/animation/character_animator.gd#L358), [`_sample_contact_bone`](../common/animation/character_animator.gd#L366), [`_find_contacts`](../common/animation/character_animator.gd#L382), [`_get_bone_chain`](../common/animation/character_animator.gd#L407), [`_index_bone_tracks`](../common/animation/character_animator.gd#L422), [`_sample_bone_transform`](../common/animation/character_animator.gd#L435), [`_bone_path`](../common/animation/character_animator.gd#L459), [`_merge_libraries`](../common/animation/character_animator.gd#L463), [`_retarget_library`](../common/animation/character_animator.gd#L477), [`_find_idle_animation`](../common/animation/character_animator.gd#L499)
 
 ### `LookAtController`
 
@@ -310,6 +340,36 @@ Makes a character's head and eyes follow a target (e.g. the camera).
 **Engine callbacks:** [`_ready`](../common/animation/look_at_controller.gd#L20), [`_process`](../common/animation/look_at_controller.gd#L25)
 
 **Internal:** [`_fade`](../common/animation/look_at_controller.gd#L50), [`_all_modifiers`](../common/animation/look_at_controller.gd#L57)
+
+## Environment
+
+### `DayNightCycle`
+
+[common/environment/day_night_cycle.gd](../common/environment/day_night_cycle.gd) · extends `Node`
+
+Drives a sun, a moon, the sky and the ambient light through a 24-hour day.
+
+| Signal | Line | Description |
+|---|---|---|
+| `time_changed` | [16](../common/environment/day_night_cycle.gd#L16) | Emitted when the in-game minute changes. |
+
+| Function | Line | Description |
+|---|---|---|
+| `get_sun_height()` | [63](../common/environment/day_night_cycle.gd#L63) | How far the sun is above the horizon, from -1 (midnight) to 1 (noon). |
+
+**Engine callbacks:** [`_ready`](../common/environment/day_night_cycle.gd#L48), [`_process`](../common/environment/day_night_cycle.gd#L52)
+
+**Internal:** [`_apply`](../common/environment/day_night_cycle.gd#L67), [`_point_light`](../common/environment/day_night_cycle.gd#L108), [`_sample`](../common/environment/day_night_cycle.gd#L113)
+
+### `GrassField`
+
+[common/environment/grass_field.gd](../common/environment/grass_field.gd) · extends `Node3D`
+
+Scatters short grass blades over a square area made of chunks.
+
+**Engine callbacks:** [`_ready`](../common/environment/grass_field.gd#L74), [`_process`](../common/environment/grass_field.gd#L78)
+
+**Internal:** [`_queue_rebuild`](../common/environment/grass_field.gd#L90), [`_rebuild`](../common/environment/grass_field.gd#L97), [`_recenter`](../common/environment/grass_field.gd#L130), [`_make_layout`](../common/environment/grass_field.gd#L142), [`_make_blade_mesh`](../common/environment/grass_field.gd#L166)
 
 ## Import scripts
 
@@ -364,15 +424,15 @@ A stage the customized character can walk around in.
 
 | Signal | Line | Description |
 |---|---|---|
-| `exit_requested` | [9](../stages/walkable_stage.gd#L9) | Emitted when the player asks to return to character creation. |
+| `exit_requested` | [10](../stages/walkable_stage.gd#L10) | Emitted when the player asks to return to character creation. |
 
 | Function | Line | Description |
 |---|---|---|
-| `setup()` | [28](../stages/walkable_stage.gd#L28) | Dresses the player's character. |
+| `setup()` | [39](../stages/walkable_stage.gd#L39) | Dresses the player's character. |
 
-**Engine callbacks:** [`_ready`](../stages/walkable_stage.gd#L15)
+**Engine callbacks:** [`_ready`](../stages/walkable_stage.gd#L17)
 
-**Internal:** [`_on_move_speed_changed`](../stages/walkable_stage.gd#L32), [`_on_walk_playback_multiplier_changed`](../stages/walkable_stage.gd#L36)
+**Internal:** [`_on_move_speed_changed`](../stages/walkable_stage.gd#L44), [`_on_jog_speed_changed`](../stages/walkable_stage.gd#L48), [`_on_time_of_day_changed`](../stages/walkable_stage.gd#L52), [`_on_time_paused_toggled`](../stages/walkable_stage.gd#L56), [`_on_walk_playback_multiplier_changed`](../stages/walkable_stage.gd#L60)
 
 ## Player
 
@@ -384,9 +444,10 @@ Walks a customized Mannequin around, relative to the camera.
 
 | Function | Line | Description |
 |---|---|---|
-| `get_effective_move_speed()` | [44](../player/player.gd#L44) | Returns the speed the player walks at, in m/s, resolving `move_speed` = 0 to the walk's stride speed. |
+| `get_effective_move_speed()` | [50](../player/player.gd#L50) | Returns the speed the player walks at, in m/s, resolving `move_speed` = 0 to the walk's stride speed. |
+| `get_effective_jog_speed()` | [60](../player/player.gd#L60) | Returns the speed the player jogs at, in m/s, resolving `jog_speed` = 0 to the jog's stride speed. |
 
-**Engine callbacks:** [`_physics_process`](../player/player.gd#L22)
+**Engine callbacks:** [`_physics_process`](../player/player.gd#L25)
 
 ### `ThirdPersonCamera`
 
@@ -410,50 +471,56 @@ Character creation UI: appearance cards on the left, the wardrobe on the right.
 |---|---|---|
 | `skin_tone_changed` | [16](../ui/customization_menu/customization_menu.gd#L16) | Emitted when either skin slider changes. |
 | `hair_color_changed` | [18](../ui/customization_menu/customization_menu.gd#L18) | Emitted when a hair swatch or the custom hair color is picked. |
-| `item_selected` | [20](../ui/customization_menu/customization_menu.gd#L20) | Emitted when an item button is pressed. |
-| `slot_cleared` | [22](../ui/customization_menu/customization_menu.gd#L22) | Emitted when a slot's "None" button is pressed. |
-| `item_tint_changed` | [24](../ui/customization_menu/customization_menu.gd#L24) | Emitted when a slot's color picker changes. |
-| `body_shape_changed` | [26](../ui/customization_menu/customization_menu.gd#L26) | Emitted when a body shape slider changes. |
-| `expression_selected` | [28](../ui/customization_menu/customization_menu.gd#L28) | Emitted when an expression button is pressed. |
-| `auto_blink_toggled` | [30](../ui/customization_menu/customization_menu.gd#L30) | Emitted when the auto blink checkbox is toggled. |
-| `arm_pose_selected` | [32](../ui/customization_menu/customization_menu.gd#L32) | Emitted when an arm pose button is pressed. |
-| `body_pose_selected` | [34](../ui/customization_menu/customization_menu.gd#L34) | Emitted when a body pose button is pressed. |
-| `play_requested` | [36](../ui/customization_menu/customization_menu.gd#L36) | Emitted when the Play button is pressed. |
-| `focus_requested` | [38](../ui/customization_menu/customization_menu.gd#L38) | Emitted with the camera framing of a newly hovered section. |
-| `head_follow_toggled` | [40](../ui/customization_menu/customization_menu.gd#L40) | Emitted when the head follow chip is toggled. |
-| `eyes_follow_toggled` | [42](../ui/customization_menu/customization_menu.gd#L42) | Emitted when the eyes follow chip is toggled. |
+| `eye_color_changed` | [20](../ui/customization_menu/customization_menu.gd#L20) | Emitted when an eye swatch or the custom eye color is picked. |
+| `item_selected` | [22](../ui/customization_menu/customization_menu.gd#L22) | Emitted when an item button is pressed. |
+| `slot_cleared` | [24](../ui/customization_menu/customization_menu.gd#L24) | Emitted when a slot's "None" button is pressed. |
+| `item_tint_changed` | [26](../ui/customization_menu/customization_menu.gd#L26) | Emitted when a slot's color picker changes. |
+| `body_shape_changed` | [28](../ui/customization_menu/customization_menu.gd#L28) | Emitted when a body shape slider changes. |
+| `expression_selected` | [30](../ui/customization_menu/customization_menu.gd#L30) | Emitted when an expression button is pressed. |
+| `auto_blink_toggled` | [32](../ui/customization_menu/customization_menu.gd#L32) | Emitted when the auto blink checkbox is toggled. |
+| `arm_pose_selected` | [34](../ui/customization_menu/customization_menu.gd#L34) | Emitted when an arm pose button is pressed. |
+| `body_pose_selected` | [36](../ui/customization_menu/customization_menu.gd#L36) | Emitted when a body pose button is pressed. |
+| `play_requested` | [38](../ui/customization_menu/customization_menu.gd#L38) | Emitted when the Play button is pressed. |
+| `focus_requested` | [40](../ui/customization_menu/customization_menu.gd#L40) | Emitted with the camera framing of a newly hovered section. |
+| `head_follow_toggled` | [42](../ui/customization_menu/customization_menu.gd#L42) | Emitted when the head follow chip is toggled. |
+| `eyes_follow_toggled` | [44](../ui/customization_menu/customization_menu.gd#L44) | Emitted when the eyes follow chip is toggled. |
 
 | Function | Line | Description |
 |---|---|---|
-| `set_body_values()` | [134](../ui/customization_menu/customization_menu.gd#L134) | Shows the current skin tone, undertone and hair color. |
-| `set_follow_state()` | [141](../ui/customization_menu/customization_menu.gd#L141) | Shows whether the head and eyes follow the camera. |
-| `set_arm_poses()` | [147](../ui/customization_menu/customization_menu.gd#L147) | Lists `poses` as arm pose buttons, after "Default". |
-| `set_body_poses()` | [157](../ui/customization_menu/customization_menu.gd#L157) | Lists `poses` as body pose buttons, after "Idle". |
-| `set_body_shape_values()` | [167](../ui/customization_menu/customization_menu.gd#L167) | Shows the current body shape sliders and auto blink state. |
-| `set_body_shape_available()` | [174](../ui/customization_menu/customization_menu.gd#L174) | Disables a body shape slider whose clothing condition isn't met. |
-| `set_slot_state()` | [186](../ui/customization_menu/customization_menu.gd#L186) | Shows which item is worn in `slot` and its tint. |
+| `set_body_values()` | [169](../ui/customization_menu/customization_menu.gd#L169) | Shows the current skin tone, undertone, hair and eye colors. |
+| `set_follow_state()` | [177](../ui/customization_menu/customization_menu.gd#L177) | Shows whether the head and eyes follow the camera. |
+| `set_arm_poses()` | [183](../ui/customization_menu/customization_menu.gd#L183) | Lists `poses` as arm pose buttons, after "Default". |
+| `set_body_poses()` | [193](../ui/customization_menu/customization_menu.gd#L193) | Lists `poses` as body pose buttons, after "Idle". |
+| `set_body_shape_values()` | [203](../ui/customization_menu/customization_menu.gd#L203) | Shows the current body shape sliders and auto blink state. |
+| `set_body_shape_available()` | [210](../ui/customization_menu/customization_menu.gd#L210) | Disables a body shape slider whose clothing condition isn't met. |
+| `set_slot_state()` | [222](../ui/customization_menu/customization_menu.gd#L222) | Shows which item is worn in `slot` and its tint. |
 
-**Engine callbacks:** [`_ready`](../ui/customization_menu/customization_menu.gd#L106), [`_process`](../ui/customization_menu/customization_menu.gd#L129)
+**Engine callbacks:** [`_ready`](../ui/customization_menu/customization_menu.gd#L138), [`_process`](../ui/customization_menu/customization_menu.gd#L164)
 
-**Internal:** [`_update_hover`](../ui/customization_menu/customization_menu.gd#L199), [`_focus_card`](../ui/customization_menu/customization_menu.gd#L208), [`_is_hover_blocked`](../ui/customization_menu/customization_menu.gd#L220), [`_find_hovered_card`](../ui/customization_menu/customization_menu.gd#L231), [`_build_hair_swatches`](../ui/customization_menu/customization_menu.gd#L241), [`_build_body_shape_sliders`](../ui/customization_menu/customization_menu.gd#L260), [`_build_expression_buttons`](../ui/customization_menu/customization_menu.gd#L275), [`_add_toggle_button`](../ui/customization_menu/customization_menu.gd#L286), [`_build_slot_list`](../ui/customization_menu/customization_menu.gd#L299), [`_clear`](../ui/customization_menu/customization_menu.gd#L338), [`_on_skin_slider_changed`](../ui/customization_menu/customization_menu.gd#L344), [`_on_body_shape_slider_changed`](../ui/customization_menu/customization_menu.gd#L348), [`_on_hair_swatch_pressed`](../ui/customization_menu/customization_menu.gd#L352), [`_on_tint_picker_changed`](../ui/customization_menu/customization_menu.gd#L357)
+**Internal:** [`_update_hover`](../ui/customization_menu/customization_menu.gd#L236), [`_focus_card`](../ui/customization_menu/customization_menu.gd#L245), [`_is_hover_blocked`](../ui/customization_menu/customization_menu.gd#L257), [`_find_hovered_card`](../ui/customization_menu/customization_menu.gd#L268), [`_build_swatches`](../ui/customization_menu/customization_menu.gd#L280), [`_build_hair_styles`](../ui/customization_menu/customization_menu.gd#L302), [`_build_body_shape_sliders`](../ui/customization_menu/customization_menu.gd#L316), [`_build_expression_buttons`](../ui/customization_menu/customization_menu.gd#L331), [`_add_toggle_button`](../ui/customization_menu/customization_menu.gd#L342), [`_build_slot_list`](../ui/customization_menu/customization_menu.gd#L355), [`_clear`](../ui/customization_menu/customization_menu.gd#L394), [`_on_skin_slider_changed`](../ui/customization_menu/customization_menu.gd#L400), [`_on_body_shape_slider_changed`](../ui/customization_menu/customization_menu.gd#L404), [`_on_swatch_pressed`](../ui/customization_menu/customization_menu.gd#L408), [`_on_tint_picker_changed`](../ui/customization_menu/customization_menu.gd#L413)
 
 ### `StageHud`
 
 [ui/stage_hud/stage_hud.gd](../ui/stage_hud/stage_hud.gd) · extends `Control`
 
-Back button plus live tuning for walk speed and stride matching.
+Back button plus live tuning for walk and jog speed and stride matching, and time-of-day controls on stages with a DayNightCycle.
 
 | Signal | Line | Description |
 |---|---|---|
-| `back_pressed` | [6](../ui/stage_hud/stage_hud.gd#L6) | Emitted when the back button is pressed. |
-| `move_speed_changed` | [8](../ui/stage_hud/stage_hud.gd#L8) | Emitted when the move speed slider changes, in m/s. |
-| `walk_playback_multiplier_changed` | [10](../ui/stage_hud/stage_hud.gd#L10) | Emitted when the walk playback slider changes. |
+| `back_pressed` | [7](../ui/stage_hud/stage_hud.gd#L7) | Emitted when the back button is pressed. |
+| `move_speed_changed` | [9](../ui/stage_hud/stage_hud.gd#L9) | Emitted when the move speed slider changes, in m/s. |
+| `jog_speed_changed` | [11](../ui/stage_hud/stage_hud.gd#L11) | Emitted when the jog speed slider changes, in m/s. |
+| `walk_playback_multiplier_changed` | [13](../ui/stage_hud/stage_hud.gd#L13) | Emitted when the walk playback slider changes. |
+| `time_of_day_changed` | [15](../ui/stage_hud/stage_hud.gd#L15) | Emitted when the time of day slider is dragged, in hours. |
+| `time_paused_toggled` | [17](../ui/stage_hud/stage_hud.gd#L17) | Emitted when the pause time toggle changes. |
 
 | Function | Line | Description |
 |---|---|---|
-| `set_values()` | [27](../ui/stage_hud/stage_hud.gd#L27) | Shows the current tuning values without emitting change signals. |
+| `set_values()` | [45](../ui/stage_hud/stage_hud.gd#L45) | Shows the current tuning values without emitting change signals. |
+| `show_time_controls()` | [67](../ui/stage_hud/stage_hud.gd#L67) | Shows the time-of-day controls with the cycle's current state. |
+| `show_time()` | [74](../ui/stage_hud/stage_hud.gd#L74) | Shows the current time of day without emitting change signals. |
 
-**Engine callbacks:** [`_ready`](../ui/stage_hud/stage_hud.gd#L20)
+**Engine callbacks:** [`_ready`](../ui/stage_hud/stage_hud.gd#L34)
 
-**Internal:** [`_on_move_speed_changed`](../ui/stage_hud/stage_hud.gd#L35), [`_on_playback_changed`](../ui/stage_hud/stage_hud.gd#L40)
+**Internal:** [`_format_time`](../ui/stage_hud/stage_hud.gd#L79), [`_on_time_slider_changed`](../ui/stage_hud/stage_hud.gd#L84), [`_on_move_speed_changed`](../ui/stage_hud/stage_hud.gd#L89), [`_on_jog_speed_changed`](../ui/stage_hud/stage_hud.gd#L94), [`_on_playback_changed`](../ui/stage_hud/stage_hud.gd#L99)
 

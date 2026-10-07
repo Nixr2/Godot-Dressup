@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="OutfitItem" format=3 uid="uid://dumf5dikkcaxl"]
+
+[ext_resource type="Script" uid="uid://cox8rdaau8r6l" path="res://customization/outfit_item.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://csarl3p83mw7w" path="res://decal_overlays/decal_blush.glb" id="2_scene"]
+[ext_resource type="Material" uid="uid://c2yl04o5k7xxe" path="res://common/materials/toon_overlay.tres" id="4_overlay"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"decal_blush"
+display_name = "Blush"
+slot = 9
+scene = ExtResource("2_scene")
+material_template = ExtResource("4_overlay")
+default_tint = Color(0.9765, 0.7216, 0.6706, 1)
+texture_base_color = Color(0.9765, 0.7216, 0.6706, 1)

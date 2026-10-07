@@ -9,7 +9,6 @@
 script = ExtResource("1_script")
 id = &"school_top"
 display_name = "School Top"
-slot = 1
 scene = ExtResource("2_scene")
 hide_mask = ExtResource("4_hide_mask")
 hide_mask_body = ExtResource("3_hide_mask_body")

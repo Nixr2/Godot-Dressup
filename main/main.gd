@@ -19,6 +19,7 @@ func _ready() -> void:
 
 	_customization_menu.skin_tone_changed.connect(body_customizer.set_skin_tone)
 	_customization_menu.hair_color_changed.connect(body_customizer.set_hair_color)
+	_customization_menu.eye_color_changed.connect(body_customizer.set_eye_color)
 	_customization_menu.item_selected.connect(wardrobe.equip)
 	_customization_menu.slot_cleared.connect(wardrobe.unequip)
 	_customization_menu.item_tint_changed.connect(wardrobe.set_item_tint)
@@ -44,7 +45,8 @@ func _ready() -> void:
 	_customization_menu.set_body_values(
 			body_customizer.skin_tone,
 			body_customizer.skin_undertone,
-			body_customizer.hair_color
+			body_customizer.hair_color,
+			body_customizer.eye_color
 	)
 	for slot: OutfitItem.Slot in OutfitItem.Slot.values():
 		_customization_menu.set_slot_state(
@@ -86,8 +88,8 @@ func _on_play_requested() -> void:
 	remove_child(_dressing_room)
 	remove_child(_customization_menu)
 	_stage = play_stage.instantiate()
-	add_child(_stage)
 	_stage.setup(appearance)
+	add_child(_stage)
 	_stage.exit_requested.connect(_on_stage_exit_requested)
 
 

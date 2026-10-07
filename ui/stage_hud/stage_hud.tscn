@@ -60,6 +60,28 @@ max_value = 3.0
 step = 0.01
 value = 1.0
 
+[node name="JogSpeedRow" type="HBoxContainer" parent="Panel/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="JogSpeedLabel" type="Label" parent="Panel/Content/JogSpeedRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"SectionHeader"
+text = "Jog Speed"
+
+[node name="JogSpeedValue" type="Label" parent="Panel/Content/JogSpeedRow"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="JogSpeedSlider" type="HSlider" parent="Panel/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+min_value = 0.1
+max_value = 6.0
+step = 0.01
+value = 2.0
+
 [node name="PlaybackRow" type="HBoxContainer" parent="Panel/Content"]
 layout_mode = 2
 
@@ -89,8 +111,45 @@ layout_mode = 2
 theme_type_variation = &"HintLabel"
 autowrap_mode = 3
 
+[node name="TimeControls" type="VBoxContainer" parent="Panel/Content"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
+[node name="Separator" type="HSeparator" parent="Panel/Content/TimeControls"]
+layout_mode = 2
+
+[node name="TimeRow" type="HBoxContainer" parent="Panel/Content/TimeControls"]
+layout_mode = 2
+
+[node name="TimeLabel" type="Label" parent="Panel/Content/TimeControls/TimeRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"SectionHeader"
+text = "Time of Day"
+
+[node name="TimeValue" type="Label" parent="Panel/Content/TimeControls/TimeRow"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="TimeSlider" type="HSlider" parent="Panel/Content/TimeControls"]
+unique_name_in_owner = true
+layout_mode = 2
+max_value = 24.0
+step = 0.01
+value = 9.0
+
+[node name="PauseToggle" type="Button" parent="Panel/Content/TimeControls"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"ToggleChip"
+toggle_mode = true
+text = "Pause Time"
+
 [node name="HintLabel" type="Label" parent="Panel/Content"]
 layout_mode = 2
 theme_type_variation = &"HintLabel"
 text = "WASD / left stick to move
+Hold Shift / click the stick to jog
 Right-drag to orbit, wheel to zoom"

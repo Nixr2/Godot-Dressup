@@ -5,6 +5,7 @@
 [ext_resource type="Resource" uid="uid://l1p2rftlwqdb" path="res://customization/default_skin_tone_palette.tres" id="3_skin_tone_palette"]
 [ext_resource type="Resource" uid="uid://dvhgumrik1f32" path="res://characters/mannequin/doll_shape_keys.tres" id="4_doll_shape_keys"]
 [ext_resource type="Theme" uid="uid://u8m8mvxnk223" path="res://ui/theme/dreamy_theme.tres" id="5_dreamy_theme"]
+[ext_resource type="Resource" uid="uid://byfis1e6cjivy" path="res://hair/hair_catalog.tres" id="6_hair_catalog"]
 
 [node name="CustomizationMenu" type="Control"]
 layout_mode = 3
@@ -17,6 +18,7 @@ mouse_filter = 2
 theme = ExtResource("5_dreamy_theme")
 script = ExtResource("1_script")
 catalog = ExtResource("2_catalog")
+hair_catalog = ExtResource("6_hair_catalog")
 skin_tone_palette = ExtResource("3_skin_tone_palette")
 shape_key_set = ExtResource("4_doll_shape_keys")
 
@@ -131,6 +133,53 @@ custom_minimum_size = Vector2(34, 24)
 layout_mode = 2
 size_flags_vertical = 0
 tooltip_text = "Custom hair color"
+edit_alpha = false
+
+[node name="FrontLabel" type="Label" parent="LeftPanel/Content/LeftScroll/Sections/HairCard/Content"]
+layout_mode = 2
+theme_type_variation = &"HintLabel"
+text = "Front"
+
+[node name="HairFrontButtons" type="HFlowContainer" parent="LeftPanel/Content/LeftScroll/Sections/HairCard/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="BackLabel" type="Label" parent="LeftPanel/Content/LeftScroll/Sections/HairCard/Content"]
+layout_mode = 2
+theme_type_variation = &"HintLabel"
+text = "Back"
+
+[node name="HairBackButtons" type="HFlowContainer" parent="LeftPanel/Content/LeftScroll/Sections/HairCard/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="EyesCard" type="PanelContainer" parent="LeftPanel/Content/LeftScroll/Sections"]
+layout_mode = 2
+theme_type_variation = &"Card"
+metadata/focus = &"face"
+
+[node name="Content" type="VBoxContainer" parent="LeftPanel/Content/LeftScroll/Sections/EyesCard"]
+layout_mode = 2
+
+[node name="Header" type="Label" parent="LeftPanel/Content/LeftScroll/Sections/EyesCard/Content"]
+layout_mode = 2
+theme_type_variation = &"SectionHeader"
+text = "Eyes"
+
+[node name="EyeRow" type="HBoxContainer" parent="LeftPanel/Content/LeftScroll/Sections/EyesCard/Content"]
+layout_mode = 2
+
+[node name="EyeSwatches" type="HFlowContainer" parent="LeftPanel/Content/LeftScroll/Sections/EyesCard/Content/EyeRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="EyeColorPicker" type="ColorPickerButton" parent="LeftPanel/Content/LeftScroll/Sections/EyesCard/Content/EyeRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(34, 24)
+layout_mode = 2
+size_flags_vertical = 0
+tooltip_text = "Custom eye color"
 edit_alpha = false
 
 [node name="BodyShapeCard" type="PanelContainer" parent="LeftPanel/Content/LeftScroll/Sections"]

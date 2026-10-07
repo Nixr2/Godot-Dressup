@@ -20,8 +20,11 @@
 [ext_resource type="Script" uid="uid://br6f105reh8ft" path="res://common/animation/body_pose.gd" id="18_body_pose"]
 [ext_resource type="Resource" uid="uid://mdw6noxmlg1o" path="res://characters/mannequin/body_poses/lewd_pose_1.tres" id="19_lewd_pose_1"]
 [ext_resource type="Material" uid="uid://bgrl7hpvnvcc4" path="res://characters/mannequin/materials/doll_skin.tres" id="20_doll_skin"]
-[ext_resource type="Material" uid="uid://b1kb80mo6ewkk" path="res://characters/mannequin/materials/doll_hair.tres" id="21_doll_hair"]
+[ext_resource type="Material" uid="uid://cr6i5d85ce2jh" path="res://characters/mannequin/materials/doll_eyes.tres" id="27_doll_eyes"]
 [ext_resource type="Script" uid="uid://bx3kroe70plr6" path="res://common/animation/look_at_controller.gd" id="23_look_at_controller"]
+[ext_resource type="AnimationLibrary" uid="uid://cuusyl2tnqnp5" path="res://characters/mannequin/animations/jog.glb" id="24_jog"]
+[ext_resource type="AnimationLibrary" uid="uid://g7qrjsm5xvom" path="res://characters/mannequin/animations/doggy.glb" id="25_doggy"]
+[ext_resource type="Resource" uid="uid://iy0bnr0h4762" path="res://characters/mannequin/body_poses/doggy.tres" id="26_doggy_pose"]
 
 [node name="Mannequin" type="Node3D"]
 script = ExtResource("1_mannequin")
@@ -78,18 +81,19 @@ clothing_rig = NodePath("../Model/root/Skeleton3D/ClothingRig")
 toon_material = ExtResource("5_toon")
 body_material = ExtResource("20_doll_skin")
 
-[node name="BodyCustomizer" type="Node" parent="." node_paths=PackedStringArray("mesh_root")]
+[node name="BodyCustomizer" type="Node" parent="." node_paths=PackedStringArray("mesh_root", "wardrobe")]
 script = ExtResource("6_body_customizer")
 palette = ExtResource("7_skin_tone_palette")
 mesh_root = NodePath("../Model/root/Skeleton3D")
 skin_material = ExtResource("20_doll_skin")
-hair_material = ExtResource("21_doll_hair")
+wardrobe = NodePath("../Wardrobe")
+eye_material = ExtResource("27_doll_eyes")
 
 [node name="CharacterAnimator" type="AnimationTree" parent="." node_paths=PackedStringArray("skeleton")]
 script = ExtResource("12_character_animator")
 skeleton = NodePath("../Model/root/Skeleton3D")
-animation_libraries = Array[AnimationLibrary]([ExtResource("11_idle"), ExtResource("16_walk"), ExtResource("17_lewd_pose")])
-body_poses = Array[ExtResource("18_body_pose")]([ExtResource("19_lewd_pose_1")])
+animation_libraries = Array[AnimationLibrary]([ExtResource("11_idle"), ExtResource("16_walk"), ExtResource("24_jog"), ExtResource("17_lewd_pose"), ExtResource("25_doggy")])
+body_poses = Array[ExtResource("18_body_pose")]([ExtResource("19_lewd_pose_1"), ExtResource("26_doggy_pose")])
 arm_poses = Array[ExtResource("15_arm_pose")]([ExtResource("13_hand_on_hip"), ExtResource("14_covering")])
 
 [node name="ShapeKeyController" type="Node" parent="." node_paths=PackedStringArray("wardrobe", "mesh_root")]

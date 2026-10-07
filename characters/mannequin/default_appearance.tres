@@ -1,6 +1,10 @@
 [gd_resource type="Resource" script_class="CharacterAppearance" format=3 uid="uid://dlb5uvfw341kg"]
 
 [ext_resource type="Script" uid="uid://c47y8f3whyeaa" path="res://customization/character_appearance.gd" id="1_character_appearance"]
+[ext_resource type="Script" uid="uid://cox8rdaau8r6l" path="res://customization/outfit_item.gd" id="2_item"]
+[ext_resource type="Resource" uid="uid://b453xmg18cvg8" path="res://hair/front/front_short.tres" id="3_front_short"]
+[ext_resource type="Resource" uid="uid://cft8kp1wgenxd" path="res://hair/back/back_short.tres" id="4_back_short"]
 
 [resource]
 script = ExtResource("1_character_appearance")
+items = Array[ExtResource("2_item")]([ExtResource("3_front_short"), ExtResource("4_back_short")])

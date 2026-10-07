@@ -1,0 +1,25 @@
+[gd_resource type="Environment" format=3 uid="uid://crxgldop788b4"]
+
+[ext_resource type="Shader" uid="uid://bgkb3i4baa25j" path="res://common/shaders/day_night_sky.gdshader" id="1_sky"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_sky"]
+shader = ExtResource("1_sky")
+
+[sub_resource type="Sky" id="Sky_day_night"]
+sky_material = SubResource("ShaderMaterial_sky")
+process_mode = 2
+radiance_size = 0
+
+[resource]
+background_mode = 2
+sky = SubResource("Sky_day_night")
+ambient_light_source = 2
+ambient_light_color = Color(1, 1, 1, 1)
+reflected_light_source = 1
+glow_enabled = true
+glow_intensity = 0.4
+glow_bloom = 0.05
+fog_enabled = true
+fog_density = 0.012
+fog_aerial_perspective = 1.0
+fog_sky_affect = 0.0

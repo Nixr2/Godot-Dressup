@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="OutfitItem" format=3 uid="uid://decqhhqoef3rk"]
+
+[ext_resource type="Script" uid="uid://cox8rdaau8r6l" path="res://customization/outfit_item.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://ccu6q3ac6vcg1" path="res://hair/back/back_ponytail.glb" id="2_scene"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"back_ponytail"
+display_name = "Ponytail"
+slot = 7
+scene = ExtResource("2_scene")
+tintable = false
+tint_group = &"hair"
+texture_base_color = Color(0.7647, 0.7647, 0.7647, 1)

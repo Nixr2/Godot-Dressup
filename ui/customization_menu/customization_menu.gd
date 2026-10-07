@@ -16,6 +16,8 @@ extends Control
 signal skin_tone_changed(tone: float, undertone: float)
 ## Emitted when a hair swatch or the custom hair color is picked.
 signal hair_color_changed(color: Color)
+## Emitted when an eye swatch or the custom eye color is picked.
+signal eye_color_changed(color: Color)
 ## Emitted when an item button is pressed.
 signal item_selected(item: OutfitItem)
 ## Emitted when a slot's "None" button is pressed.
@@ -51,11 +53,35 @@ const HAIR_PRESETS: Array[Color] = [
 	Color("e6dcc3"), # Platinum
 	Color("a9a9a9"), # Gray
 ]
+const EYE_PRESETS: Array[Color] = [
+	Color("5a3a22"), # Brown
+	Color("8a6a32"), # Hazel
+	Color("4f7a3a"), # Green
+	Color("3d6fb0"), # Blue
+	Color("7d8a96"), # Gray
+	Color("7a4fb0"), # Violet
+	Color("c0507a"), # Pink
+	Color("a02a2a"), # Red
+]
+## Wardrobe card order, top to bottom. Hair slots live in the Hair card.
+const SLOT_ORDER: Array[OutfitItem.Slot] = [
+	OutfitItem.Slot.HEAD,
+	OutfitItem.Slot.FACE_OVERLAY,
+	OutfitItem.Slot.TORSO,
+	OutfitItem.Slot.UNDERWEAR,
+	OutfitItem.Slot.LEGS,
+	OutfitItem.Slot.SOCKS,
+	OutfitItem.Slot.FEET,
+	OutfitItem.Slot.ACCESSORY,
+]
 const SLOT_FOCUS: Dictionary[OutfitItem.Slot, StringName] = {
 	OutfitItem.Slot.HEAD: &"head",
 	OutfitItem.Slot.TORSO: &"torso",
+	OutfitItem.Slot.UNDERWEAR: &"torso",
 	OutfitItem.Slot.LEGS: &"legs",
 	OutfitItem.Slot.FEET: &"feet",
+	OutfitItem.Slot.SOCKS: &"feet",
+	OutfitItem.Slot.FACE_OVERLAY: &"face",
 	OutfitItem.Slot.ACCESSORY: &"full_body",
 }
 const SWATCH_SIZE := Vector2(22.0, 22.0)
@@ -64,6 +90,8 @@ const CARD := &"Card"
 const CARD_ACTIVE := &"CardActive"
 
 @export var catalog: OutfitCatalog
+## Front and back hair pieces shown in the Hair card.
+@export var hair_catalog: OutfitCatalog
 @export var skin_tone_palette: SkinTonePalette
 @export var shape_key_set: ShapeKeySet
 ## Framing for cards without their own, and the initial focus.
@@ -90,6 +118,10 @@ var _current_focus: StringName
 @onready var _undertone_slider: HSlider = %UndertoneSlider
 @onready var _hair_swatches: HFlowContainer = %HairSwatches
 @onready var _hair_color_picker: ColorPickerButton = %HairColorPicker
+@onready var _hair_front_buttons: HFlowContainer = %HairFrontButtons
+@onready var _hair_back_buttons: HFlowContainer = %HairBackButtons
+@onready var _eye_swatches: HFlowContainer = %EyeSwatches
+@onready var _eye_color_picker: ColorPickerButton = %EyeColorPicker
 @onready var _body_shape_list: VBoxContainer = %BodyShapeList
 @onready var _expression_buttons: HFlowContainer = %ExpressionButtons
 @onready var _auto_blink_check: CheckBox = %AutoBlinkCheck
@@ -111,11 +143,14 @@ func _ready() -> void:
 	_skin_tone_slider.value_changed.connect(_on_skin_slider_changed.unbind(1))
 	_undertone_slider.value_changed.connect(_on_skin_slider_changed.unbind(1))
 	_hair_color_picker.color_changed.connect(hair_color_changed.emit)
+	_eye_color_picker.color_changed.connect(eye_color_changed.emit)
 	_auto_blink_check.toggled.connect(auto_blink_toggled.emit)
 	_head_follow_toggle.toggled.connect(head_follow_toggled.emit)
 	_eyes_follow_toggle.toggled.connect(eyes_follow_toggled.emit)
 	_play_button.pressed.connect(play_requested.emit)
-	_build_hair_swatches()
+	_build_swatches(_hair_swatches, HAIR_PRESETS, _hair_color_picker, hair_color_changed)
+	_build_swatches(_eye_swatches, EYE_PRESETS, _eye_color_picker, eye_color_changed)
+	_build_hair_styles()
 	_build_body_shape_sliders()
 	_build_expression_buttons()
 	_build_slot_list()
@@ -130,11 +165,12 @@ func _process(_delta: float) -> void:
 	_update_hover(get_global_mouse_position(), _is_hover_blocked())
 
 
-## Shows the current skin tone, undertone and hair color.
-func set_body_values(tone: float, undertone: float, hair_color: Color) -> void:
+## Shows the current skin tone, undertone, hair and eye colors.
+func set_body_values(tone: float, undertone: float, hair_color: Color, eye_color: Color) -> void:
 	_skin_tone_slider.set_value_no_signal(tone)
 	_undertone_slider.set_value_no_signal(undertone)
 	_hair_color_picker.color = hair_color
+	_eye_color_picker.color = eye_color
 
 
 ## Shows whether the head and eyes follow the camera.
@@ -184,11 +220,12 @@ func set_body_shape_available(key: StringName, available: bool) -> void:
 
 ## Shows which item is worn in [param slot] and its tint.
 func set_slot_state(slot: OutfitItem.Slot, item: OutfitItem, tint: Color) -> void:
-	if not _tint_pickers.has(slot):
+	if not _clear_buttons.has(slot):
 		return
-	var picker := _tint_pickers[slot]
-	picker.disabled = item == null or not item.tintable
-	picker.color = tint
+	if _tint_pickers.has(slot):
+		var picker := _tint_pickers[slot]
+		picker.disabled = item == null or not item.tintable
+		picker.color = tint
 	var selected: Button = _item_buttons.get(item, _clear_buttons[slot])
 	selected.set_pressed_no_signal(true)
 
@@ -238,8 +275,12 @@ func _find_hovered_card(mouse: Vector2) -> PanelContainer:
 	return null
 
 
-func _build_hair_swatches() -> void:
-	for color in HAIR_PRESETS:
+## Adds a round button per preset color. Pressing one updates [param picker]
+## and emits [param changed] with the color.
+func _build_swatches(
+		container: Container, presets: Array[Color], picker: ColorPickerButton, changed: Signal
+) -> void:
+	for color in presets:
 		var swatch := Button.new()
 		swatch.custom_minimum_size = SWATCH_SIZE
 		swatch.tooltip_text = "#" + color.to_html(false)
@@ -253,8 +294,23 @@ func _build_hair_swatches() -> void:
 		for state in [&"normal", &"pressed", &"focus"]:
 			swatch.add_theme_stylebox_override(state, style)
 		swatch.add_theme_stylebox_override(&"hover", hover)
-		swatch.pressed.connect(_on_hair_swatch_pressed.bind(color))
-		_hair_swatches.add_child(swatch)
+		swatch.pressed.connect(_on_swatch_pressed.bind(color, picker, changed))
+		container.add_child(swatch)
+
+
+## Adds a "None" button plus one button per hair piece for each hair slot.
+func _build_hair_styles() -> void:
+	var rows: Dictionary[OutfitItem.Slot, HFlowContainer] = {
+		OutfitItem.Slot.HAIR_FRONT: _hair_front_buttons,
+		OutfitItem.Slot.HAIR_BACK: _hair_back_buttons,
+	}
+	for slot in rows:
+		var group := ButtonGroup.new()
+		_clear_buttons[slot] = _add_toggle_button(rows[slot], group, "None", slot_cleared, slot)
+		for item in hair_catalog.get_items_for_slot(slot):
+			_item_buttons[item] = _add_toggle_button(
+					rows[slot], group, item.display_name, item_selected, item
+			)
 
 
 func _build_body_shape_sliders() -> void:
@@ -297,7 +353,7 @@ func _add_toggle_button(
 
 
 func _build_slot_list() -> void:
-	for slot: OutfitItem.Slot in OutfitItem.Slot.values():
+	for slot in SLOT_ORDER:
 		var items := catalog.get_items_for_slot(slot)
 		if items.is_empty():
 			continue
@@ -349,9 +405,9 @@ func _on_body_shape_slider_changed(value: float, key: StringName) -> void:
 	body_shape_changed.emit(key, value)
 
 
-func _on_hair_swatch_pressed(color: Color) -> void:
-	_hair_color_picker.color = color
-	hair_color_changed.emit(color)
+func _on_swatch_pressed(color: Color, picker: ColorPickerButton, changed: Signal) -> void:
+	picker.color = color
+	changed.emit(color)
 
 
 func _on_tint_picker_changed(color: Color, slot: OutfitItem.Slot) -> void:

@@ -90,6 +90,24 @@ key = &"dialate"
 display_name = "Dilated Pupils"
 category = 1
 
+[sub_resource type="Resource" id="Resource_heart"]
+script = ExtResource("1_j0dnb")
+key = &"heart"
+display_name = "Heart Eyes"
+category = 1
+
+[sub_resource type="Resource" id="Resource_yap"]
+script = ExtResource("1_j0dnb")
+key = &"Yap"
+display_name = "Yap"
+category = 1
+
+[sub_resource type="Resource" id="Resource_foxy"]
+script = ExtResource("1_j0dnb")
+key = &"foxy"
+display_name = "Foxy"
+category = 1
+
 [sub_resource type="Resource" id="Resource_qsyof"]
 script = ExtResource("1_j0dnb")
 key = &"tuck_upper"
@@ -98,4 +116,4 @@ category = 2
 
 [resource]
 script = ExtResource("2_7dqd5")
-definitions = Array[ExtResource("1_j0dnb")]([SubResource("Resource_7rlip"), SubResource("Resource_tnika"), SubResource("Resource_55tbl"), SubResource("Resource_nbdlp"), SubResource("Resource_k08pa"), SubResource("Resource_0owmk"), SubResource("Resource_25mxb"), SubResource("Resource_w36hr"), SubResource("Resource_7hlet"), SubResource("Resource_4wwt1"), SubResource("Resource_qylcu"), SubResource("Resource_dblj2"), SubResource("Resource_pcqrw"), SubResource("Resource_vuxta"), SubResource("Resource_qsyof")])
+definitions = Array[ExtResource("1_j0dnb")]([SubResource("Resource_7rlip"), SubResource("Resource_tnika"), SubResource("Resource_55tbl"), SubResource("Resource_nbdlp"), SubResource("Resource_k08pa"), SubResource("Resource_0owmk"), SubResource("Resource_25mxb"), SubResource("Resource_w36hr"), SubResource("Resource_7hlet"), SubResource("Resource_4wwt1"), SubResource("Resource_qylcu"), SubResource("Resource_dblj2"), SubResource("Resource_pcqrw"), SubResource("Resource_vuxta"), SubResource("Resource_heart"), SubResource("Resource_yap"), SubResource("Resource_foxy"), SubResource("Resource_qsyof")])
