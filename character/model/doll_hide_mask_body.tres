@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="HideMaskBody" format=3 uid="uid://bn2lhyafaaveo"]
+
+[ext_resource type="Script" uid="uid://brrmq4ahkayr3" path="res://customization/wardrobe/hide_mask_body.gd" id="1_hide_mask_body"]
+[ext_resource type="PackedScene" uid="uid://dh5aoap7u4tkp" path="res://character/model/doll.glb" id="2_doll"]
+[ext_resource type="Material" uid="uid://bgrl7hpvnvcc4" path="res://character/materials/doll_skin.tres" id="3_doll_skin"]
+
+[resource]
+script = ExtResource("1_hide_mask_body")
+scene = ExtResource("2_doll")
+skin_material = ExtResource("3_doll_skin")

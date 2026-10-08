@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="OutfitItem" format=3 uid="uid://n4glabbmgxr0"]
+
+[ext_resource type="Script" uid="uid://cox8rdaau8r6l" path="res://customization/wardrobe/outfit_item.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://bka568qx1plho" path="res://outfits/underwear/school_swim_suit/school_swim_suit.glb" id="2_scene"]
+[ext_resource type="Resource" uid="uid://bn2lhyafaaveo" path="res://character/model/doll_hide_mask_body.tres" id="3_hide_mask_body"]
+[ext_resource type="Texture2D" uid="uid://b7p21ndyji6an" path="res://outfits/underwear/school_swim_suit/school_swim_suit_hide_mask.png" id="9_hide_mask"]
+[ext_resource type="Texture2D" uid="uid://d1xqr8wuf8x65" path="res://outfits/underwear/school_swim_suit/school_swim_suit_covered_by_school_skirt.png" id="20_covered_school_skirt"]
+[ext_resource type="Texture2D" uid="uid://cfhbp1s5yely8" path="res://outfits/underwear/school_swim_suit/school_swim_suit_covered_by_school_top.png" id="21_covered_school_top"]
+[ext_resource type="Texture2D" uid="uid://bwor7l1gnknup" path="res://outfits/underwear/school_swim_suit/school_swim_suit_covered_by_sundress_skirt.png" id="22_covered_sundress_skirt"]
+[ext_resource type="Texture2D" uid="uid://dr2hwwbrpnk2b" path="res://outfits/underwear/school_swim_suit/school_swim_suit_covered_by_sundress_top.png" id="23_covered_sundress_top"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"school_swim_suit"
+display_name = "School Swimsuit"
+slot = 5
+scene = ExtResource("2_scene")
+hide_mask = ExtResource("9_hide_mask")
+layer = 0
+covered_masks = Dictionary[StringName, Texture2D]({
+&"school_skirt": ExtResource("20_covered_school_skirt"),
+&"school_top": ExtResource("21_covered_school_top"),
+&"sundress_skirt": ExtResource("22_covered_sundress_skirt"),
+&"sundress_top": ExtResource("23_covered_sundress_top")
+})
+hide_mask_body = ExtResource("3_hide_mask_body")
+default_tint = Color(0.16, 0.2, 0.36, 1)

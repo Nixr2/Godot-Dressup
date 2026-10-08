@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="OutfitItem" format=3 uid="uid://ckh7ifyq80518"]
+
+[ext_resource type="Script" uid="uid://cox8rdaau8r6l" path="res://customization/wardrobe/outfit_item.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://drch6nm4t4hrv" path="res://outfits/socks/gym_socks/gym_socks.glb" id="2_scene"]
+[ext_resource type="Resource" uid="uid://bn2lhyafaaveo" path="res://character/model/doll_hide_mask_body.tres" id="3_hide_mask_body"]
+[ext_resource type="Texture2D" uid="uid://bki50tp20nf4" path="res://outfits/socks/gym_socks/gym_socks_hide_mask.png" id="9_hide_mask"]
+[ext_resource type="Texture2D" uid="uid://b65bi4sv3xrcd" path="res://outfits/socks/gym_socks/gym_socks_covered_by_school_shoes.png" id="20_covered_school_shoes"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"gym_socks"
+display_name = "Gym Socks"
+slot = 8
+scene = ExtResource("2_scene")
+hide_mask = ExtResource("9_hide_mask")
+layer = 0
+covered_masks = Dictionary[StringName, Texture2D]({
+&"school_shoes": ExtResource("20_covered_school_shoes")
+})
+hide_mask_body = ExtResource("3_hide_mask_body")

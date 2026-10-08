@@ -1,0 +1,119 @@
+[gd_resource type="Resource" script_class="ShapeKeySet" format=3 uid="uid://dvhgumrik1f32"]
+
+[ext_resource type="Script" uid="uid://d3so2uvt4cioq" path="res://customization/shape_keys/shape_key_definition.gd" id="1_j0dnb"]
+[ext_resource type="Script" uid="uid://daa85ufcyw6kb" path="res://customization/shape_keys/shape_key_set.gd" id="2_7dqd5"]
+
+[sub_resource type="Resource" id="Resource_7rlip"]
+script = ExtResource("1_j0dnb")
+key = &"bust"
+display_name = "Bust"
+
+[sub_resource type="Resource" id="Resource_tnika"]
+script = ExtResource("1_j0dnb")
+key = &"butt"
+display_name = "Butt"
+
+[sub_resource type="Resource" id="Resource_55tbl"]
+script = ExtResource("1_j0dnb")
+key = &"cleavage"
+display_name = "Cleavage"
+required_tag = &"shows_cleavage"
+
+[sub_resource type="Resource" id="Resource_nbdlp"]
+script = ExtResource("1_j0dnb")
+key = &"length_chest"
+display_name = "Hair Length"
+
+[sub_resource type="Resource" id="Resource_k08pa"]
+script = ExtResource("1_j0dnb")
+key = &"energy"
+display_name = "Energetic"
+category = 1
+
+[sub_resource type="Resource" id="Resource_0owmk"]
+script = ExtResource("1_j0dnb")
+key = &"anger"
+display_name = "Angry"
+category = 1
+drives = Dictionary[StringName, float]({
+&"brow_upset": 1.0,
+&"eyes_upset": 1.0,
+&"mouth_upset": 1.0
+})
+
+[sub_resource type="Resource" id="Resource_25mxb"]
+script = ExtResource("1_j0dnb")
+key = &"fuwah"
+display_name = "Fuwah"
+category = 1
+
+[sub_resource type="Resource" id="Resource_w36hr"]
+script = ExtResource("1_j0dnb")
+key = &"brow_sad"
+display_name = "Sad"
+category = 1
+
+[sub_resource type="Resource" id="Resource_7hlet"]
+script = ExtResource("1_j0dnb")
+key = &"eyes_half"
+display_name = "Sleepy"
+category = 1
+blocks_blink = true
+
+[sub_resource type="Resource" id="Resource_4wwt1"]
+script = ExtResource("1_j0dnb")
+key = &"mouth_tongue"
+display_name = "Tongue Out"
+category = 1
+
+[sub_resource type="Resource" id="Resource_qylcu"]
+script = ExtResource("1_j0dnb")
+key = &"brow_upset"
+display_name = "Upset Brows"
+category = 1
+
+[sub_resource type="Resource" id="Resource_dblj2"]
+script = ExtResource("1_j0dnb")
+key = &"eyes_upset"
+display_name = "Upset Eyes"
+category = 1
+
+[sub_resource type="Resource" id="Resource_pcqrw"]
+script = ExtResource("1_j0dnb")
+key = &"mouth_upset"
+display_name = "Upset Mouth"
+category = 1
+
+[sub_resource type="Resource" id="Resource_vuxta"]
+script = ExtResource("1_j0dnb")
+key = &"dialate"
+display_name = "Dilated Pupils"
+category = 1
+
+[sub_resource type="Resource" id="Resource_heart"]
+script = ExtResource("1_j0dnb")
+key = &"heart"
+display_name = "Heart Eyes"
+category = 1
+
+[sub_resource type="Resource" id="Resource_yap"]
+script = ExtResource("1_j0dnb")
+key = &"Yap"
+display_name = "Yap"
+category = 1
+
+[sub_resource type="Resource" id="Resource_foxy"]
+script = ExtResource("1_j0dnb")
+key = &"foxy"
+display_name = "Foxy"
+category = 1
+
+[sub_resource type="Resource" id="Resource_qsyof"]
+script = ExtResource("1_j0dnb")
+key = &"tuck_upper"
+display_name = "Tucked Shirt"
+category = 2
+
+[resource]
+script = ExtResource("2_7dqd5")
+definitions = Array[ExtResource("1_j0dnb")]([SubResource("Resource_7rlip"), SubResource("Resource_tnika"), SubResource("Resource_55tbl"), SubResource("Resource_nbdlp"), SubResource("Resource_k08pa"), SubResource("Resource_0owmk"), SubResource("Resource_25mxb"), SubResource("Resource_w36hr"), SubResource("Resource_7hlet"), SubResource("Resource_4wwt1"), SubResource("Resource_qylcu"), SubResource("Resource_dblj2"), SubResource("Resource_pcqrw"), SubResource("Resource_vuxta"), SubResource("Resource_heart"), SubResource("Resource_yap"), SubResource("Resource_foxy"), SubResource("Resource_qsyof")])

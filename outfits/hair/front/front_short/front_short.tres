@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="OutfitItem" format=3 uid="uid://b453xmg18cvg8"]
+
+[ext_resource type="Script" uid="uid://cox8rdaau8r6l" path="res://customization/wardrobe/outfit_item.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://c41gl0x5o46ay" path="res://outfits/hair/front/front_short/front_short.glb" id="2_scene"]
+[ext_resource type="Material" uid="uid://b1kb80mo6ewkk" path="res://outfits/hair/hair_material.tres" id="3_material"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"front_short"
+display_name = "Short"
+slot = 6
+scene = ExtResource("2_scene")
+material_template = ExtResource("3_material")
+tintable = false
+tint_group = &"hair"
+texture_base_color = Color(0.7647, 0.7647, 0.7647, 1)

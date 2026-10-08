@@ -19,13 +19,16 @@ func _ready() -> void:
 	_hud.back_pressed.connect(exit_requested.emit)
 	_hud.move_speed_changed.connect(_on_move_speed_changed)
 	_hud.jog_speed_changed.connect(_on_jog_speed_changed)
+	_hud.sprint_speed_changed.connect(_on_sprint_speed_changed)
 	_hud.walk_playback_multiplier_changed.connect(_on_walk_playback_multiplier_changed)
 	_hud.set_values(
 			player.get_effective_move_speed(),
 			player.get_effective_jog_speed(),
+			player.get_effective_sprint_speed(),
 			animator.walk_playback_multiplier,
 			animator.stride_speed,
-			animator.jog_stride_speed
+			animator.jog_stride_speed,
+			animator.sprint_stride_speed
 	)
 	if _day_night:
 		_hud.show_time_controls(_day_night.time_of_day, _day_night.paused)
@@ -47,6 +50,10 @@ func _on_move_speed_changed(speed: float) -> void:
 
 func _on_jog_speed_changed(speed: float) -> void:
 	player.jog_speed = speed
+
+
+func _on_sprint_speed_changed(speed: float) -> void:
+	player.sprint_speed = speed
 
 
 func _on_time_of_day_changed(hours: float) -> void:

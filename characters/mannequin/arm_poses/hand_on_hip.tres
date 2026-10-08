@@ -1,9 +1,0 @@
-[gd_resource type="Resource" script_class="ArmPose" format=3 uid="uid://d1ptd4ovch1yj"]
-
-[ext_resource type="Script" uid="uid://bwd8ajrvqy2qi" path="res://common/animation/arm_pose.gd" id="1_arm_pose"]
-
-[resource]
-script = ExtResource("1_arm_pose")
-id = &"hand_on_hip"
-display_name = "Hand on Hip"
-left_arm_animation = &"arm_hand_on_hip"

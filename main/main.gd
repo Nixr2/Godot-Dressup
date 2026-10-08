@@ -1,6 +1,10 @@
 extends Node
 ## Entry point. Wires the GUI to the 3D world (signals up, calls down) and
 ## swaps between character creation and a walkable stage.
+##
+## The player's game is loaded from the autosave on start and saved when Play
+## is pressed and when the window closes (see SaveManager). Character
+## creation's presets are saved and loaded through SaveManager too.
 
 ## Stage the Play button opens.
 @export var play_stage: PackedScene
@@ -42,6 +46,34 @@ func _ready() -> void:
 	wardrobe.item_equipped.connect(_on_item_equipped)
 	wardrobe.item_unequipped.connect(_on_item_unequipped)
 
+	_customization_menu.preset_save_requested.connect(_on_preset_save_requested)
+	_customization_menu.preset_load_requested.connect(_on_preset_load_requested)
+	_customization_menu.preset_delete_requested.connect(SaveManager.delete_preset)
+	SaveManager.presets_changed.connect(_refresh_presets)
+	_refresh_presets()
+
+	if SaveManager.load_game() == OK and SaveManager.current.player.appearance:
+		mannequin.apply_appearance(SaveManager.current.player.appearance)
+	_sync_menu()
+
+
+func _notification(what: int) -> void:
+	match what:
+		NOTIFICATION_WM_CLOSE_REQUEST:
+			_save_game()
+		NOTIFICATION_PREDELETE:
+			# Character creation is kept out of the tree while on a stage.
+			if not _dressing_room.is_inside_tree():
+				_dressing_room.free()
+				_customization_menu.free()
+
+
+## Shows the mannequin's current look in the menu.
+func _sync_menu() -> void:
+	var mannequin := _dressing_room.mannequin
+	var wardrobe := mannequin.wardrobe
+	var body_customizer := mannequin.body_customizer
+	var shape_keys := mannequin.shape_key_controller
 	_customization_menu.set_body_values(
 			body_customizer.skin_tone,
 			body_customizer.skin_undertone,
@@ -58,11 +90,17 @@ func _ready() -> void:
 	_update_shape_key_availability()
 
 
-func _notification(what: int) -> void:
-	# Character creation is kept out of the tree while on a stage.
-	if what == NOTIFICATION_PREDELETE and not _dressing_room.is_inside_tree():
-		_dressing_room.free()
-		_customization_menu.free()
+## Stores the character creation look in the current game and writes it to
+## the autosave.
+func _save_game() -> void:
+	SaveManager.current.player.appearance = _dressing_room.mannequin.get_appearance()
+	SaveManager.save_game()
+
+
+func _refresh_presets() -> void:
+	_customization_menu.set_presets(
+			SaveManager.get_builtin_preset_names(), SaveManager.get_preset_names()
+	)
 
 
 func _update_shape_key_availability() -> void:
@@ -82,9 +120,30 @@ func _on_item_unequipped(item: OutfitItem) -> void:
 	_customization_menu.set_slot_state(item.slot, null, Color.WHITE)
 
 
+func _on_preset_save_requested(preset_name: String) -> void:
+	if SaveManager.is_builtin_preset(preset_name):
+		_customization_menu.show_preset_status(
+				"\"%s\" is a built-in preset; pick another name." % preset_name
+		)
+	elif SaveManager.save_preset(preset_name, _dressing_room.mannequin.get_appearance()) == OK:
+		_customization_menu.show_preset_saved(preset_name)
+	else:
+		_customization_menu.show_preset_status("Couldn't save \"%s\"." % preset_name)
+
+
+func _on_preset_load_requested(preset_name: String) -> void:
+	var appearance := SaveManager.load_preset(preset_name)
+	if appearance == null:
+		_customization_menu.show_preset_status("Couldn't load \"%s\"." % preset_name)
+		return
+	_dressing_room.mannequin.apply_appearance(appearance)
+	_sync_menu()
+
+
 ## Keeps character creation alive (but out of the tree) so it's unchanged on return.
 func _on_play_requested() -> void:
-	var appearance := _dressing_room.mannequin.get_appearance()
+	_save_game()
+	var appearance := SaveManager.current.player.appearance
 	remove_child(_dressing_room)
 	remove_child(_customization_menu)
 	_stage = play_stage.instantiate()

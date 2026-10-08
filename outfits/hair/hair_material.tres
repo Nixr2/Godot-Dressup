@@ -1,0 +1,8 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://b1kb80mo6ewkk"]
+
+[ext_resource type="Shader" uid="uid://cukogbu032fnp" path="res://common/toon/toon.gdshader" id="1_toon"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_toon")
+shader_parameter/texture_base_color = Color(0.7647, 0.7647, 0.7647, 1)

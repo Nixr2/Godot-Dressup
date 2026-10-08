@@ -42,6 +42,12 @@ signal focus_requested(focus: StringName)
 signal head_follow_toggled(enabled: bool)
 ## Emitted when the eyes follow chip is toggled.
 signal eyes_follow_toggled(enabled: bool)
+## Emitted when the player saves the current look as a preset.
+signal preset_save_requested(preset_name: String)
+## Emitted when the player picks a preset to load.
+signal preset_load_requested(preset_name: String)
+## Emitted when the player confirms deleting one of their presets.
+signal preset_delete_requested(preset_name: String)
 
 const HAIR_PRESETS: Array[Color] = [
 	Color("2a2420"), # Black
@@ -85,6 +91,8 @@ const SLOT_FOCUS: Dictionary[OutfitItem.Slot, StringName] = {
 	OutfitItem.Slot.ACCESSORY: &"full_body",
 }
 const SWATCH_SIZE := Vector2(22.0, 22.0)
+## How long a delete button waits for its confirming second press.
+const DELETE_CONFIRM_TIME := 2.5
 const FOCUS_META := &"focus"
 const CARD := &"Card"
 const CARD_ACTIVE := &"CardActive"
@@ -113,6 +121,10 @@ var _hovered_card: PanelContainer
 var _focused_card: PanelContainer
 var _current_focus: StringName
 
+@onready var _preset_name_edit: LineEdit = %PresetNameEdit
+@onready var _save_preset_button: Button = %SavePresetButton
+@onready var _preset_status: Label = %PresetStatus
+@onready var _preset_list: VBoxContainer = %PresetList
 @onready var _skin_tone_preview: TextureRect = %SkinTonePreview
 @onready var _skin_tone_slider: HSlider = %SkinToneSlider
 @onready var _undertone_slider: HSlider = %UndertoneSlider
@@ -148,6 +160,9 @@ func _ready() -> void:
 	_head_follow_toggle.toggled.connect(head_follow_toggled.emit)
 	_eyes_follow_toggle.toggled.connect(eyes_follow_toggled.emit)
 	_play_button.pressed.connect(play_requested.emit)
+	_save_preset_button.pressed.connect(_on_save_preset_pressed)
+	_preset_name_edit.text_submitted.connect(_on_save_preset_pressed.unbind(1))
+	_preset_name_edit.text_changed.connect(_on_preset_name_changed)
 	_build_swatches(_hair_swatches, HAIR_PRESETS, _hair_color_picker, hair_color_changed)
 	_build_swatches(_eye_swatches, EYE_PRESETS, _eye_color_picker, eye_color_changed)
 	_build_hair_styles()
@@ -163,6 +178,31 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	_update_hover(get_global_mouse_position(), _is_hover_blocked())
+
+
+## Lists the presets: [param builtin_names] can only be loaded, the player's
+## own [param user_names] can also be deleted.
+func set_presets(builtin_names: PackedStringArray, user_names: PackedStringArray) -> void:
+	for row in _preset_list.get_children():
+		row.queue_free()
+	for preset_name in builtin_names:
+		_add_preset_row(preset_name, false)
+	for preset_name in user_names:
+		_add_preset_row(preset_name, true)
+
+
+## Confirms that [param preset_name] was saved and clears the name field.
+func show_preset_saved(preset_name: String) -> void:
+	_preset_name_edit.clear()
+	_save_preset_button.disabled = true
+	show_preset_status("Saved \"%s\"." % preset_name)
+
+
+## Shows a short note under the preset name field, e.g. why a save failed.
+## An empty [param message] hides it.
+func show_preset_status(message: String) -> void:
+	_preset_status.text = message
+	_preset_status.visible = not message.is_empty()
 
 
 ## Shows the current skin tone, undertone, hair and eye colors.
@@ -412,3 +452,50 @@ func _on_swatch_pressed(color: Color, picker: ColorPickerButton, changed: Signal
 
 func _on_tint_picker_changed(color: Color, slot: OutfitItem.Slot) -> void:
 	item_tint_changed.emit(slot, color)
+
+
+func _add_preset_row(preset_name: String, deletable: bool) -> void:
+	var row := HBoxContainer.new()
+	var load_button := Button.new()
+	load_button.text = preset_name
+	load_button.tooltip_text = "Load \"%s\"" % preset_name
+	load_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	load_button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	load_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	load_button.pressed.connect(preset_load_requested.emit.bind(preset_name))
+	row.add_child(load_button)
+	if deletable:
+		var delete_button := Button.new()
+		delete_button.text = "Delete"
+		delete_button.tooltip_text = "Delete \"%s\"" % preset_name
+		delete_button.pressed.connect(_on_delete_preset_pressed.bind(delete_button, preset_name))
+		row.add_child(delete_button)
+	_preset_list.add_child(row)
+
+
+func _on_preset_name_changed(text: String) -> void:
+	_save_preset_button.disabled = text.strip_edges().is_empty()
+	show_preset_status("")
+
+
+func _on_save_preset_pressed() -> void:
+	var preset_name := _preset_name_edit.text.strip_edges()
+	if preset_name.is_empty():
+		return
+	preset_save_requested.emit(preset_name)
+
+
+# Deleting takes two presses, so one stray click can't lose a preset.
+func _on_delete_preset_pressed(button: Button, preset_name: String) -> void:
+	if button.has_meta(&"armed"):
+		preset_delete_requested.emit(preset_name)
+		return
+	button.set_meta(&"armed", true)
+	button.text = "Sure?"
+	get_tree().create_timer(DELETE_CONFIRM_TIME).timeout.connect(_disarm_delete_button.bind(button))
+
+
+func _disarm_delete_button(button: Button) -> void:
+	if is_instance_valid(button):
+		button.remove_meta(&"armed")
+		button.text = "Delete"

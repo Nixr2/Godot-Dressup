@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="OutfitItem" format=3 uid="uid://didf77l1wj00o"]
+
+[ext_resource type="Script" uid="uid://cox8rdaau8r6l" path="res://customization/wardrobe/outfit_item.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://b0ydfkjrgq0uu" path="res://outfits/hair/back/back_natural/back_natural.glb" id="2_scene"]
+[ext_resource type="Material" uid="uid://b1kb80mo6ewkk" path="res://outfits/hair/hair_material.tres" id="3_material"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"back_natural"
+display_name = "Natural"
+slot = 7
+scene = ExtResource("2_scene")
+material_template = ExtResource("3_material")
+tintable = false
+tint_group = &"hair"
+texture_base_color = Color(0.7647, 0.7647, 0.7647, 1)

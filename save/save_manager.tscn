@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://bbmkoq0awg74s"]
+
+[ext_resource type="Script" uid="uid://cl21w5plr61do" path="res://save/save_manager.gd" id="1_save_manager"]
+[ext_resource type="Resource" uid="uid://cgry3w1m1m58w" path="res://outfits/outfit_catalog.tres" id="2_outfit_catalog"]
+[ext_resource type="Resource" uid="uid://byfis1e6cjivy" path="res://outfits/hair/hair_catalog.tres" id="3_hair_catalog"]
+[ext_resource type="Resource" uid="uid://dlb5uvfw341kg" path="res://character/default_appearance.tres" id="4_default_appearance"]
+[ext_resource type="Script" uid="uid://br087bg3gtius" path="res://customization/wardrobe/outfit_catalog.gd" id="5_outfit_catalog_script"]
+[ext_resource type="Script" uid="uid://c47y8f3whyeaa" path="res://customization/character_appearance.gd" id="6_character_appearance_script"]
+
+[node name="SaveManager" type="Node"]
+script = ExtResource("1_save_manager")
+item_catalogs = Array[ExtResource("5_outfit_catalog_script")]([ExtResource("2_outfit_catalog"), ExtResource("3_hair_catalog")])
+builtin_presets = Dictionary[String, ExtResource("6_character_appearance_script")]({
+"Default": ExtResource("4_default_appearance")
+})

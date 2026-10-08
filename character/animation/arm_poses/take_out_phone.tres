@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="ArmPose" format=3 uid="uid://ckhk34robt22n"]
+
+[ext_resource type="Script" uid="uid://bwd8ajrvqy2qi" path="res://character/animation/arm_pose.gd" id="1_arm_pose"]
+[ext_resource type="Script" uid="uid://cr8frn0h1wvbc" path="res://character/animation/held_prop.gd" id="2_held_prop"]
+[ext_resource type="PackedScene" uid="uid://csm3ymmditj5d" path="res://outfits/handheld/flip_phone/flip_phone.glb" id="3_flip_phone"]
+
+[sub_resource type="Resource" id="Resource_flip_phone"]
+script = ExtResource("2_held_prop")
+scene = ExtResource("3_flip_phone")
+position = Vector3(0, 0.06, -0.02)
+rotation_degrees = Vector3(90, 180, 0)
+show_time = 0.45
+cues = Dictionary[float, StringName]({
+0.85: &"open"
+})
+release_animation = &"-open"
+
+[resource]
+script = ExtResource("1_arm_pose")
+id = &"take_out_phone"
+display_name = "Take Out Phone"
+left_arm_animation = &"take_out_phone"
+right_arm_animation = &"take_out_phone"
+loop = false
+prop = SubResource("Resource_flip_phone")

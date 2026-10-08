@@ -1,0 +1,119 @@
+[gd_scene format=3 uid="uid://uwr5fbydffsj"]
+
+[ext_resource type="Script" uid="uid://d7m3xscljlmi" path="res://character/mannequin.gd" id="1_mannequin"]
+[ext_resource type="Resource" uid="uid://dlb5uvfw341kg" path="res://character/default_appearance.tres" id="2_default_appearance"]
+[ext_resource type="PackedScene" uid="uid://dh5aoap7u4tkp" path="res://character/model/doll.glb" id="3_doll"]
+[ext_resource type="Script" uid="uid://b7h52sk4nifuf" path="res://customization/wardrobe/wardrobe.gd" id="4_wardrobe"]
+[ext_resource type="Material" uid="uid://dadhtb5xalp62" path="res://common/toon/toon.tres" id="5_toon"]
+[ext_resource type="Script" uid="uid://ncx7wayjjo0e" path="res://customization/body/body_customizer.gd" id="6_body_customizer"]
+[ext_resource type="Resource" uid="uid://l1p2rftlwqdb" path="res://customization/body/default_skin_tone_palette.tres" id="7_skin_tone_palette"]
+[ext_resource type="SkeletonProfile" uid="uid://c76q3i713kvyc" path="res://character/model/doll_skeleton_profile.tres" id="8_doll_skeleton_profile"]
+[ext_resource type="Script" uid="uid://cyf86yv8ffout" path="res://customization/shape_keys/shape_key_controller.gd" id="9_shape_key_controller"]
+[ext_resource type="Resource" uid="uid://dvhgumrik1f32" path="res://character/model/doll_shape_keys.tres" id="10_doll_shape_keys"]
+[ext_resource type="AnimationLibrary" uid="uid://6oqxadbnnuvy" path="res://character/animation/clips/idle.glb" id="11_idle"]
+[ext_resource type="Script" uid="uid://b376gl15ev3hy" path="res://character/animation/character_animator.gd" id="12_character_animator"]
+[ext_resource type="Resource" uid="uid://d1ptd4ovch1yj" path="res://character/animation/arm_poses/hand_on_hip.tres" id="13_hand_on_hip"]
+[ext_resource type="Resource" uid="uid://byv74wae032lf" path="res://character/animation/arm_poses/covering.tres" id="14_covering"]
+[ext_resource type="Script" uid="uid://bwd8ajrvqy2qi" path="res://character/animation/arm_pose.gd" id="15_arm_pose"]
+[ext_resource type="AnimationLibrary" uid="uid://cue0abjuplx1o" path="res://character/animation/clips/walk.glb" id="16_walk"]
+[ext_resource type="AnimationLibrary" uid="uid://tyu8scd2kcs5" path="res://character/animation/clips/lewd_pose.glb" id="17_lewd_pose"]
+[ext_resource type="Script" uid="uid://br6f105reh8ft" path="res://character/animation/body_pose.gd" id="18_body_pose"]
+[ext_resource type="Resource" uid="uid://mdw6noxmlg1o" path="res://character/animation/body_poses/lewd_pose_1.tres" id="19_lewd_pose_1"]
+[ext_resource type="Material" uid="uid://bgrl7hpvnvcc4" path="res://character/materials/doll_skin.tres" id="20_doll_skin"]
+[ext_resource type="Material" uid="uid://cr6i5d85ce2jh" path="res://character/materials/doll_eyes.tres" id="27_doll_eyes"]
+[ext_resource type="Script" uid="uid://bx3kroe70plr6" path="res://character/animation/look_at_controller.gd" id="23_look_at_controller"]
+[ext_resource type="AnimationLibrary" uid="uid://cuusyl2tnqnp5" path="res://character/animation/clips/jog.glb" id="24_jog"]
+[ext_resource type="AnimationLibrary" uid="uid://g7qrjsm5xvom" path="res://character/animation/clips/doggy.glb" id="25_doggy"]
+[ext_resource type="Resource" uid="uid://iy0bnr0h4762" path="res://character/animation/body_poses/doggy.tres" id="26_doggy_pose"]
+[ext_resource type="AnimationLibrary" uid="uid://buf6yemy223lu" path="res://character/animation/clips/take_out_phone.glb" id="28_take_out_phone"]
+[ext_resource type="AnimationLibrary" uid="uid://bklmjaeb7a7l7" path="res://character/animation/clips/sprint.glb" id="31_sprint"]
+[ext_resource type="Resource" uid="uid://ckhk34robt22n" path="res://character/animation/arm_poses/take_out_phone.tres" id="29_take_out_phone_pose"]
+[ext_resource type="Script" uid="uid://bmygxvnw15wv8" path="res://character/animation/held_prop_controller.gd" id="30_held_prop_controller"]
+
+[node name="Mannequin" type="Node3D"]
+script = ExtResource("1_mannequin")
+initial_appearance = ExtResource("2_default_appearance")
+
+[node name="Model" parent="." instance=ExtResource("3_doll")]
+
+[node name="HeadLookAt" type="LookAtModifier3D" parent="Model/root/Skeleton3D"]
+bone_name = "head.x"
+forward_axis = 4
+primary_rotation_axis = 1
+use_secondary_rotation = true
+duration = 0.35
+transition_type = 1
+ease_type = 1
+use_angle_limitation = true
+symmetry_limitation = true
+primary_limit_angle = 1.745329
+secondary_limit_angle = 1.047198
+
+[node name="LeftEyeLookAt" type="LookAtModifier3D" parent="Model/root/Skeleton3D"]
+bone_name = "c_eye.l"
+forward_axis = 2
+primary_rotation_axis = 2
+use_secondary_rotation = true
+duration = 0.12
+transition_type = 1
+ease_type = 1
+use_angle_limitation = true
+symmetry_limitation = true
+primary_limit_angle = 0.872665
+secondary_limit_angle = 0.523599
+
+[node name="RightEyeLookAt" type="LookAtModifier3D" parent="Model/root/Skeleton3D"]
+bone_name = "c_eye.r"
+forward_axis = 2
+primary_rotation_axis = 2
+use_secondary_rotation = true
+duration = 0.12
+transition_type = 1
+ease_type = 1
+use_angle_limitation = true
+symmetry_limitation = true
+primary_limit_angle = 0.872665
+secondary_limit_angle = 0.523599
+
+[node name="ClothingRig" type="RetargetModifier3D" parent="Model/root/Skeleton3D"]
+profile = ExtResource("8_doll_skeleton_profile")
+
+[node name="Wardrobe" type="Node" parent="." node_paths=PackedStringArray("skeleton", "clothing_rig")]
+script = ExtResource("4_wardrobe")
+skeleton = NodePath("../Model/root/Skeleton3D")
+clothing_rig = NodePath("../Model/root/Skeleton3D/ClothingRig")
+toon_material = ExtResource("5_toon")
+body_material = ExtResource("20_doll_skin")
+
+[node name="BodyCustomizer" type="Node" parent="." node_paths=PackedStringArray("mesh_root", "wardrobe")]
+script = ExtResource("6_body_customizer")
+palette = ExtResource("7_skin_tone_palette")
+mesh_root = NodePath("../Model/root/Skeleton3D")
+skin_material = ExtResource("20_doll_skin")
+wardrobe = NodePath("../Wardrobe")
+eye_material = ExtResource("27_doll_eyes")
+
+[node name="CharacterAnimator" type="AnimationTree" parent="." node_paths=PackedStringArray("skeleton")]
+script = ExtResource("12_character_animator")
+skeleton = NodePath("../Model/root/Skeleton3D")
+animation_libraries = Array[AnimationLibrary]([ExtResource("11_idle"), ExtResource("16_walk"), ExtResource("24_jog"), ExtResource("17_lewd_pose"), ExtResource("25_doggy"), ExtResource("28_take_out_phone"), ExtResource("31_sprint")])
+body_poses = Array[ExtResource("18_body_pose")]([ExtResource("19_lewd_pose_1"), ExtResource("26_doggy_pose")])
+jog_animation = &"running"
+sprint_animation = &"sprinting"
+arm_poses = Array[ExtResource("15_arm_pose")]([ExtResource("13_hand_on_hip"), ExtResource("14_covering"), ExtResource("29_take_out_phone_pose")])
+
+[node name="ShapeKeyController" type="Node" parent="." node_paths=PackedStringArray("wardrobe", "mesh_root")]
+script = ExtResource("9_shape_key_controller")
+shape_key_set = ExtResource("10_doll_shape_keys")
+wardrobe = NodePath("../Wardrobe")
+mesh_root = NodePath("../Model/root/Skeleton3D")
+
+[node name="LookAtController" type="Node" parent="." node_paths=PackedStringArray("head_modifiers", "eye_modifiers")]
+script = ExtResource("23_look_at_controller")
+head_modifiers = [NodePath("../Model/root/Skeleton3D/HeadLookAt")]
+eye_modifiers = [NodePath("../Model/root/Skeleton3D/LeftEyeLookAt"), NodePath("../Model/root/Skeleton3D/RightEyeLookAt")]
+
+[node name="HeldPropController" type="Node" parent="." node_paths=PackedStringArray("skeleton")]
+script = ExtResource("30_held_prop_controller")
+skeleton = NodePath("../Model/root/Skeleton3D")
+toon_material = ExtResource("5_toon")

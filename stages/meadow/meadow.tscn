@@ -2,10 +2,10 @@
 
 [ext_resource type="Script" uid="uid://3mp4yu6hiuv6" path="res://stages/walkable_stage.gd" id="1_walkable_stage"]
 [ext_resource type="Environment" uid="uid://crxgldop788b4" path="res://stages/meadow/meadow_environment.tres" id="2_environment"]
-[ext_resource type="Script" uid="uid://d1nclx1ugmak1" path="res://common/environment/day_night_cycle.gd" id="3_day_night_cycle"]
-[ext_resource type="Script" uid="uid://cs0g6bcmnb8b3" path="res://common/environment/grass_field.gd" id="4_grass_field"]
-[ext_resource type="Shader" uid="uid://g7udj4tsqoph" path="res://common/shaders/grass.gdshader" id="5_grass"]
-[ext_resource type="Shader" uid="uid://on6c1eg8at3j" path="res://common/shaders/meadow_ground.gdshader" id="6_ground"]
+[ext_resource type="Script" uid="uid://d1nclx1ugmak1" path="res://common/day_night/day_night_cycle.gd" id="3_day_night_cycle"]
+[ext_resource type="Script" uid="uid://cs0g6bcmnb8b3" path="res://common/grass/grass_field.gd" id="4_grass_field"]
+[ext_resource type="Shader" uid="uid://g7udj4tsqoph" path="res://common/grass/grass.gdshader" id="5_grass"]
+[ext_resource type="Shader" uid="uid://on6c1eg8at3j" path="res://stages/meadow/meadow_ground.gdshader" id="6_ground"]
 [ext_resource type="PackedScene" uid="uid://i2j85nd3dfkx" path="res://player/player.tscn" id="7_player"]
 [ext_resource type="PackedScene" uid="uid://cojmxonrtbqub" path="res://ui/stage_hud/stage_hud.tscn" id="8_stage_hud"]
 

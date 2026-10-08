@@ -1,0 +1,9 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://c2yl04o5k7xxe"]
+
+[ext_resource type="Shader" uid="uid://dhye064ic4kw5" path="res://common/toon/toon_overlay.gdshader" id="1_toon_overlay"]
+
+[resource]
+render_priority = 1
+shader = ExtResource("1_toon_overlay")
+shader_parameter/texture_base_color = Color(1, 1, 1, 1)
+shader_parameter/opacity = 1.0

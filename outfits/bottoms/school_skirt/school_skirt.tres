@@ -1,8 +1,8 @@
 [gd_resource type="Resource" script_class="OutfitItem" format=3 uid="uid://c2ig0wyc6hhje"]
 
-[ext_resource type="Script" uid="uid://cox8rdaau8r6l" path="res://customization/outfit_item.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://cox8rdaau8r6l" path="res://customization/wardrobe/outfit_item.gd" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://bekjn4pkwltox" path="res://outfits/bottoms/school_skirt/school_skirt.glb" id="2_scene"]
-[ext_resource type="Resource" uid="uid://bn2lhyafaaveo" path="res://characters/mannequin/doll_hide_mask_body.tres" id="3_hide_mask_body"]
+[ext_resource type="Resource" uid="uid://bn2lhyafaaveo" path="res://character/model/doll_hide_mask_body.tres" id="3_hide_mask_body"]
 [ext_resource type="Texture2D" uid="uid://cmpxg8d26nv5c" path="res://outfits/bottoms/school_skirt/school_skirt_hide_mask.png" id="4_hide_mask"]
 
 [resource]

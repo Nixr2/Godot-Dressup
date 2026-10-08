@@ -1,6 +1,6 @@
 class_name StageHud
 extends Control
-## Back button plus live tuning for walk and jog speed and stride matching,
+## Back button plus live tuning for walk, jog and sprint speed and stride matching,
 ## and time-of-day controls on stages with a [DayNightCycle].
 
 ## Emitted when the back button is pressed.
@@ -9,6 +9,8 @@ signal back_pressed
 signal move_speed_changed(speed: float)
 ## Emitted when the jog speed slider changes, in m/s.
 signal jog_speed_changed(speed: float)
+## Emitted when the sprint speed slider changes, in m/s.
+signal sprint_speed_changed(speed: float)
 ## Emitted when the walk playback slider changes.
 signal walk_playback_multiplier_changed(multiplier: float)
 ## Emitted when the time of day slider is dragged, in hours.
@@ -22,6 +24,9 @@ signal time_paused_toggled(paused: bool)
 @onready var _jog_speed_slider: HSlider = %JogSpeedSlider
 @onready var _jog_speed_value: Label = %JogSpeedValue
 @onready var _jog_speed_row: HBoxContainer = %JogSpeedRow
+@onready var _sprint_speed_slider: HSlider = %SprintSpeedSlider
+@onready var _sprint_speed_value: Label = %SprintSpeedValue
+@onready var _sprint_speed_row: HBoxContainer = %SprintSpeedRow
 @onready var _playback_slider: HSlider = %PlaybackSlider
 @onready var _playback_value: Label = %PlaybackValue
 @onready var _stride_label: Label = %StrideLabel
@@ -35,32 +40,42 @@ func _ready() -> void:
 	_back_button.pressed.connect(back_pressed.emit)
 	_move_speed_slider.value_changed.connect(_on_move_speed_changed)
 	_jog_speed_slider.value_changed.connect(_on_jog_speed_changed)
+	_sprint_speed_slider.value_changed.connect(_on_sprint_speed_changed)
 	_playback_slider.value_changed.connect(_on_playback_changed)
 	_time_slider.value_changed.connect(_on_time_slider_changed)
 	_pause_toggle.toggled.connect(time_paused_toggled.emit)
 
 
 ## Shows the current tuning values without emitting change signals.
-## [param jog_stride_speed] = 0 hides the jog slider.
+## A stride speed of 0 hides that gait's slider.
 func set_values(
 		move_speed: float,
 		jog_speed: float,
+		sprint_speed: float,
 		playback_multiplier: float,
 		stride_speed: float,
 		jog_stride_speed: float,
+		sprint_stride_speed: float,
 ) -> void:
 	_move_speed_slider.set_value_no_signal(move_speed)
 	_move_speed_value.text = "%.2f m/s" % move_speed
 	_jog_speed_slider.set_value_no_signal(jog_speed)
 	_jog_speed_value.text = "%.2f m/s" % jog_speed
+	_sprint_speed_slider.set_value_no_signal(sprint_speed)
+	_sprint_speed_value.text = "%.2f m/s" % sprint_speed
 	_playback_slider.set_value_no_signal(playback_multiplier)
 	_playback_value.text = "%.2fx" % playback_multiplier
 	var has_jog := jog_stride_speed > 0.0
 	_jog_speed_row.visible = has_jog
 	_jog_speed_slider.visible = has_jog
+	var has_sprint := sprint_stride_speed > 0.0
+	_sprint_speed_row.visible = has_sprint
+	_sprint_speed_slider.visible = has_sprint
 	_stride_label.text = "Natural stride speed: walk %.2f m/s" % stride_speed
 	if has_jog:
 		_stride_label.text += ", jog %.2f m/s" % jog_stride_speed
+	if has_sprint:
+		_stride_label.text += ", sprint %.2f m/s" % sprint_stride_speed
 
 
 ## Shows the time-of-day controls with the cycle's current state.
@@ -94,6 +109,11 @@ func _on_move_speed_changed(value: float) -> void:
 func _on_jog_speed_changed(value: float) -> void:
 	_jog_speed_value.text = "%.2f m/s" % value
 	jog_speed_changed.emit(value)
+
+
+func _on_sprint_speed_changed(value: float) -> void:
+	_sprint_speed_value.text = "%.2f m/s" % value
+	sprint_speed_changed.emit(value)
 
 
 func _on_playback_changed(value: float) -> void:

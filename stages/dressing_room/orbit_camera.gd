@@ -32,14 +32,18 @@ var _distance := 2.0
 
 
 func _ready() -> void:
+	# Moves every frame, so physics interpolation would only make it stutter.
+	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	_yaw = rotation.y
 	focus(default_focus)
 	_snap()
 
 
 func _process(delta: float) -> void:
-	var orbit_input := Input.get_axis(&"camera_orbit_left", &"camera_orbit_right")
-	_yaw -= orbit_input * keyboard_orbit_speed * delta
+	# Typing in a text field (e.g. a preset name) mustn't turn the camera.
+	if not get_viewport().gui_get_focus_owner() is LineEdit:
+		var orbit_input := Input.get_axis(&"camera_orbit_left", &"camera_orbit_right")
+		_yaw -= orbit_input * keyboard_orbit_speed * delta
 
 	var weight := 1.0 - exp(-follow_sharpness * delta)
 	global_position = global_position.lerp(_get_focus_point(), weight)

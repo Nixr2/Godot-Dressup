@@ -1,9 +1,17 @@
 [gd_resource type="Environment" format=3 uid="uid://crxgldop788b4"]
 
-[ext_resource type="Shader" uid="uid://bgkb3i4baa25j" path="res://common/shaders/day_night_sky.gdshader" id="1_sky"]
+[ext_resource type="Shader" uid="uid://bgkb3i4baa25j" path="res://common/day_night/day_night_sky.gdshader" id="1_sky"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_sky"]
 shader = ExtResource("1_sky")
+shader_parameter/top_color = Color(0.24, 0.5, 0.84, 1)
+shader_parameter/horizon_color = Color(0.66, 0.82, 0.96, 1)
+shader_parameter/ground_color = Color(0.14, 0.2, 0.12, 1)
+shader_parameter/cloud_color = Color(1, 1, 1, 1)
+shader_parameter/cloud_coverage = 0.42
+shader_parameter/cloud_speed = 0.006
+shader_parameter/star_intensity = 0.0
+shader_parameter/disk_scale = 3.0
 
 [sub_resource type="Sky" id="Sky_day_night"]
 sky_material = SubResource("ShaderMaterial_sky")
