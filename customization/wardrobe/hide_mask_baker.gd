@@ -11,6 +11,8 @@ extends RefCounted
 ## texel is hidden (white). Loose parts (a flared skirt over the hips) are
 ## further away than the ray reaches, so what's under them stays visible;
 ## tight parts (a waistband) and anything that pokes through are hidden.
+## Hidden areas are then shrunk by [member OutfitItem.hide_margin] texels
+## where they border visible ones, leaving a small margin along the edges.
 ##
 ## All scenes are read in their bind pose, with the covering item's
 ## [member OutfitItem.shape_key_overrides] applied to matching shape keys.
@@ -84,6 +86,7 @@ static func _bake(
 			continue
 		_rasterize_triangle(i, positions, normals, uvs, size, grid, ray, hidden, covered)
 
+	_shrink_hidden(hidden, covered, size, item.hide_margin)
 	_pad_islands(hidden, covered, size)
 	return Image.create_from_data(size, size, false, Image.FORMAT_L8, hidden)
 
@@ -134,6 +137,32 @@ static func _rasterize_triangle(
 			var outside := point + normal * ray.y
 			if grid.segment_hits(inside, outside):
 				hidden[index] = _HIDDEN
+
+
+## Unhides hidden texels next to visible ones on the same surface, [param pixels]
+## times. Hidden texels at the edge of a UV island (a seam) stay hidden, so
+## seams never open a line of skin inside a covered area.
+static func _shrink_hidden(
+		hidden: PackedByteArray, covered: PackedByteArray, size: int, pixels: int
+) -> void:
+	for pass_index in pixels:
+		var revealed := PackedInt32Array()
+		for y in size:
+			for x in size:
+				var index := y * size + x
+				if hidden[index] != _HIDDEN:
+					continue
+				for offset: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+					var nx := x + offset.x
+					var ny := y + offset.y
+					if nx < 0 or ny < 0 or nx >= size or ny >= size:
+						continue
+					var neighbor := ny * size + nx
+					if covered[neighbor] and hidden[neighbor] != _HIDDEN:
+						revealed.append(index)
+						break
+		for index in revealed:
+			hidden[index] = 0
 
 
 static func _pad_islands(hidden: PackedByteArray, covered: PackedByteArray, size: int) -> void:

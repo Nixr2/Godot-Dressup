@@ -12,6 +12,18 @@ extends CharacterBody3D
 ## [CharacterAnimator], which blends the gaits and scales their playback so
 ## the feet stay planted (walking into a wall slows the walk instead of
 ## gliding). Running kicks up a [DustTrail] behind the feet.
+##
+## The toggle_phone action takes the phone out with [member phone_pose]: the
+## character stops, mouse look pauses, and [signal phone_opened] fires once
+## the phone is open, for a menu to appear. Pressing it again (or calling
+## [method put_away_phone]) puts it away. While the phone is out,
+## [method set_selfie_mode] holds it out for a selfie with its front camera
+## ([SelfieCamera]).
+
+## Emitted once the phone is out and open, ready for its menu.
+signal phone_opened
+## Emitted when the phone is put away.
+signal phone_closed
 
 ## Walking speed in m/s. 0 = the walk animation's natural stride speed, so
 ## it plays at exactly 1x.
@@ -35,19 +47,40 @@ extends CharacterBody3D
 @export var acceleration := 6.0
 ## How quickly the model turns to face its movement direction.
 @export var turn_speed := 10.0
+## Arm pose that takes the phone out; its prop is the phone.
+@export var phone_pose: ArmPose
+## Seconds from taking the phone out until it's open and its menu can show.
+@export_range(0.0, 5.0, 0.05, "suffix:s") var phone_open_delay := 1.1
 
 var _autorun := false
+var _phone_out := false
+# Counts phone requests, so a timer from an earlier one is ignored.
+var _phone_request := 0
 
 @onready var mannequin: Mannequin = $Mannequin
 @onready var _camera_rig: ThirdPersonCamera = $CameraRig
 @onready var _dust_trail: DustTrail = $DustTrail
+@onready var _selfie_camera: SelfieCamera = $SelfieCamera
 
 
 func _ready() -> void:
 	_update_gait_speeds()
+	_selfie_camera.setup(mannequin)
+
+
+# Caught before the GUI, so the phone menu's buttons can't swallow it.
+func _input(event: InputEvent) -> void:
+	if event.is_action_pressed(&"toggle_phone"):
+		if _phone_out:
+			put_away_phone()
+		else:
+			take_out_phone()
+		get_viewport().set_input_as_handled()
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _phone_out:
+		return
 	if event.is_action_pressed(&"move_autorun"):
 		_autorun = not _autorun
 	elif event.is_action_pressed(&"move_forward") or event.is_action_pressed(&"move_back"):
@@ -56,11 +89,13 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _physics_process(delta: float) -> void:
 	var input := Input.get_vector(&"move_left", &"move_right", &"move_forward", &"move_back")
-	if _autorun:
+	if _phone_out:
+		input = Vector2.ZERO
+	elif _autorun:
 		input = Vector2(input.x, -1.0).limit_length(1.0)
 	var direction := Basis(Vector3.UP, _camera_rig.yaw) * Vector3(input.x, 0.0, input.y)
-	var sprinting := Input.is_action_pressed(&"move_sprint")
-	var jogging := not sprinting and Input.is_action_pressed(&"move_jog")
+	var sprinting := not _phone_out and Input.is_action_pressed(&"move_sprint")
+	var jogging := not _phone_out and not sprinting and Input.is_action_pressed(&"move_jog")
 	var speed := get_effective_move_speed()
 	if sprinting:
 		speed = get_effective_sprint_speed()
@@ -84,6 +119,63 @@ func _physics_process(delta: float) -> void:
 		var facing := atan2(horizontal.x, horizontal.z)
 		var weight := 1.0 - exp(-turn_speed * delta)
 		mannequin.rotation.y = lerp_angle(mannequin.rotation.y, facing, weight)
+
+
+## Takes the phone out: plays [member phone_pose], stops the character and
+## pauses mouse look. [signal phone_opened] follows once the phone is open.
+func take_out_phone() -> void:
+	if _phone_out or phone_pose == null:
+		return
+	_phone_out = true
+	_autorun = false
+	_phone_request += 1
+	mannequin.animator.set_arm_pose(phone_pose)
+	_camera_rig.set_look_enabled(false)
+	get_tree().create_timer(phone_open_delay).timeout.connect(
+			_on_phone_open_delay_elapsed.bind(_phone_request)
+	)
+
+
+## Puts the phone away and resumes mouse look.
+func put_away_phone() -> void:
+	if not _phone_out:
+		return
+	set_selfie_mode(false)
+	_phone_out = false
+	mannequin.animator.set_arm_pose(null)
+	_camera_rig.set_look_enabled(true)
+	phone_closed.emit()
+
+
+func is_phone_out() -> bool:
+	return _phone_out
+
+
+## Holds the phone out for a selfie with its front camera (only while the
+## phone is out), or back in the phone pose.
+func set_selfie_mode(enabled: bool) -> void:
+	if enabled and not _phone_out:
+		return
+	_selfie_camera.activate(enabled)
+
+
+## Returns the phone's front camera, for a viewfinder to render from.
+func get_selfie_camera() -> SelfieCamera:
+	return _selfie_camera
+
+
+func is_selfie_mode() -> bool:
+	return _selfie_camera.is_active()
+
+
+## Switches the phone camera between its normal and wide (0.5x) lens.
+func set_wide_lens(wide: bool) -> void:
+	_selfie_camera.set_wide_lens(wide)
+
+
+func _on_phone_open_delay_elapsed(request: int) -> void:
+	if _phone_out and request == _phone_request:
+		phone_opened.emit()
 
 
 ## Returns the speed the player walks at, in m/s, resolving

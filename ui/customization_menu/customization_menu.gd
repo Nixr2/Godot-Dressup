@@ -267,7 +267,9 @@ func set_slot_state(slot: OutfitItem.Slot, item: OutfitItem, tint: Color) -> voi
 		picker.disabled = item == null or not item.tintable
 		picker.color = tint
 	var selected: Button = _item_buttons.get(item, _clear_buttons[slot])
-	selected.set_pressed_no_signal(true)
+	# set_pressed_no_signal() doesn't release the rest of the group.
+	for button in selected.button_group.get_buttons():
+		button.set_pressed_no_signal(button == selected)
 
 
 ## Focuses the card under [param mouse] when it differs from last frame's.

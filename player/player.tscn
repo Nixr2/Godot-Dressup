@@ -4,6 +4,8 @@
 [ext_resource type="PackedScene" uid="uid://uwr5fbydffsj" path="res://character/mannequin.tscn" id="2_mannequin"]
 [ext_resource type="Script" uid="uid://f2cr7twh03am" path="res://player/third_person_camera.gd" id="3_third_person_camera"]
 [ext_resource type="PackedScene" uid="uid://c83o8i1280j4v" path="res://common/effects/dust_trail/dust_trail.tscn" id="4_dust_trail"]
+[ext_resource type="Resource" uid="uid://ckhk34robt22n" path="res://character/animation/arm_poses/take_out_phone.tres" id="5_take_out_phone"]
+[ext_resource type="Script" uid="uid://dofgy5jgkofum" path="res://player/selfie_camera.gd" id="6_selfie_camera"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.15
@@ -15,6 +17,7 @@ script = ExtResource("1_player")
 move_speed = 0.97
 jog_speed = 2.6
 sprint_speed = 3.63
+phone_pose = ExtResource("5_take_out_phone")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1901210282]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.575, 0)
@@ -38,3 +41,8 @@ fov = 55.0
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)
 min_speed = 1.5
 full_speed = 3.6
+
+[node name="SelfieCamera" type="Camera3D" parent="."]
+near = 0.01
+fov = 70.0
+script = ExtResource("6_selfie_camera")

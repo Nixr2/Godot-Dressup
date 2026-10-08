@@ -58,6 +58,10 @@ enum Slot {
 @export_range(0.0, 0.05, 0.001, "or_greater", "suffix:m") var hide_distance := 0.01
 ## Skin is also hidden where it pokes through the garment by up to this much.
 @export_range(0.0, 0.05, 0.001, "or_greater", "suffix:m") var hide_depth := 0.02
+## Texels shaved off the edges of hidden areas, so a thin band of what's
+## underneath stays visible along the garment's edge instead of hiding right
+## up to it. 0 = hide everything the garment covers.
+@export_range(0, 16, 1, "suffix:px") var hide_margin := 2
 @export_tool_button("Bake Hide Mask", "Bake") var bake_hide_mask_button := bake_hide_mask
 
 @export_group("Shape Keys")

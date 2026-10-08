@@ -13,3 +13,4 @@ item_catalogs = Array[ExtResource("5_outfit_catalog_script")]([ExtResource("2_ou
 builtin_presets = Dictionary[String, ExtResource("6_character_appearance_script")]({
 "Default": ExtResource("4_default_appearance")
 })
+starting_inventory = ExtResource("2_outfit_catalog")

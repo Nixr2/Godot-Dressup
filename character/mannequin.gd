@@ -17,6 +17,7 @@ extends Node3D
 
 func _ready() -> void:
 	animator.arm_pose_changed.connect(_on_arm_pose_changed)
+	held_prop.look_target_changed.connect(look_at.set_override_target)
 	if initial_appearance:
 		apply_appearance(initial_appearance)
 

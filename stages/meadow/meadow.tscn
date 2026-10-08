@@ -7,6 +7,7 @@
 [ext_resource type="Shader" uid="uid://g7udj4tsqoph" path="res://common/grass/grass.gdshader" id="5_grass"]
 [ext_resource type="Shader" uid="uid://on6c1eg8at3j" path="res://stages/meadow/meadow_ground.gdshader" id="6_ground"]
 [ext_resource type="PackedScene" uid="uid://i2j85nd3dfkx" path="res://player/player.tscn" id="7_player"]
+[ext_resource type="PackedScene" uid="uid://bx4r0jgg51pyw" path="res://ui/phone_menu/phone_menu.tscn" id="9_phone_menu"]
 [ext_resource type="PackedScene" uid="uid://cojmxonrtbqub" path="res://ui/stage_hud/stage_hud.tscn" id="8_stage_hud"]
 
 [sub_resource type="Gradient" id="Gradient_sky_top"]
@@ -83,3 +84,5 @@ target = NodePath("../Player")
 [node name="Player" parent="." instance=ExtResource("7_player")]
 
 [node name="StageHud" parent="." instance=ExtResource("8_stage_hud")]
+
+[node name="PhoneMenu" parent="." instance=ExtResource("9_phone_menu")]

@@ -1,0 +1,170 @@
+[gd_scene format=3 uid="uid://bx4r0jgg51pyw"]
+
+[ext_resource type="Script" uid="uid://c3uvmhdopi5i7" path="res://ui/phone_menu/phone_menu.gd" id="1_phone_menu"]
+[ext_resource type="Theme" uid="uid://u8m8mvxnk223" path="res://ui/theme/dreamy_theme.tres" id="2_dreamy_theme"]
+
+[sub_resource type="ButtonGroup" id="ButtonGroup_tabs"]
+
+[node name="PhoneMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("2_dreamy_theme")
+script = ExtResource("1_phone_menu")
+
+[node name="Phone" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -364.0
+offset_top = -660.0
+offset_right = -24.0
+offset_bottom = -24.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="Content" type="VBoxContainer" parent="Phone"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="SpeakerRow" type="CenterContainer" parent="Phone/Content"]
+layout_mode = 2
+
+[node name="Speaker" type="Panel" parent="Phone/Content/SpeakerRow"]
+custom_minimum_size = Vector2(56, 6)
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"CardActive"
+
+[node name="Tabs" type="HBoxContainer" parent="Phone/Content"]
+layout_mode = 2
+alignment = 1
+
+[node name="WardrobeTab" type="Button" parent="Phone/Content/Tabs"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+toggle_mode = true
+button_pressed = true
+button_group = SubResource("ButtonGroup_tabs")
+text = "Wardrobe"
+
+[node name="CameraTab" type="Button" parent="Phone/Content/Tabs"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+toggle_mode = true
+button_group = SubResource("ButtonGroup_tabs")
+text = "Camera"
+
+[node name="WardrobePage" type="VBoxContainer" parent="Phone/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="Hint" type="Label" parent="Phone/Content/WardrobePage"]
+layout_mode = 2
+theme_type_variation = &"HintLabel"
+text = "Tap an item to wear it."
+horizontal_alignment = 1
+
+[node name="Scroll" type="ScrollContainer" parent="Phone/Content/WardrobePage"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="SlotList" type="VBoxContainer" parent="Phone/Content/WardrobePage/Scroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="EmptyLabel" type="Label" parent="Phone/Content/WardrobePage"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_type_variation = &"HintLabel"
+text = "Your inventory is empty."
+horizontal_alignment = 1
+
+[node name="CameraPage" type="VBoxContainer" parent="Phone/Content"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="ViewfinderFrame" type="PanelContainer" parent="Phone/Content/CameraPage"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_type_variation = &"Card"
+
+[node name="Viewfinder" type="TextureRect" parent="Phone/Content/CameraPage/ViewfinderFrame"]
+unique_name_in_owner = true
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Flash" type="ColorRect" parent="Phone/Content/CameraPage/ViewfinderFrame"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+mouse_filter = 2
+
+[node name="CameraHint" type="Label" parent="Phone/Content/CameraPage"]
+layout_mode = 2
+theme_type_variation = &"HintLabel"
+text = "Right-drag to move your arm, wheel for reach."
+horizontal_alignment = 1
+
+[node name="CameraButtons" type="HBoxContainer" parent="Phone/Content/CameraPage"]
+layout_mode = 2
+
+[node name="WideLensToggle" type="Button" parent="Phone/Content/CameraPage/CameraButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+tooltip_text = "Wide lens: fits more in the shot"
+focus_mode = 0
+toggle_mode = true
+text = "0.5x"
+
+[node name="PhotoButton" type="Button" parent="Phone/Content/CameraPage/CameraButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+text = "Take Photo"
+
+[node name="PhotoStatus" type="Label" parent="Phone/Content/CameraPage"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"HintLabel"
+horizontal_alignment = 1
+text_overrun_behavior = 3
+
+[node name="CloseButton" type="Button" parent="Phone/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+text = "Put Phone Away"
+
+[node name="PreviewViewport" type="SubViewport" parent="."]
+unique_name_in_owner = true
+size = Vector2i(540, 720)
+
+[node name="PreviewCamera" type="Camera3D" parent="PreviewViewport"]
+unique_name_in_owner = true
+current = true
+near = 0.01
+fov = 70.0

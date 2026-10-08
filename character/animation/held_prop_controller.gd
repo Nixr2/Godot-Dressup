@@ -4,9 +4,15 @@ extends Node
 ## animation cues in time with the pose.
 ##
 ## Call [method hold] when the pose starts and [method release] when it ends;
-## a released prop plays its release animation, then disappears.
+## a released prop plays its release animation, then disappears. At the
+## prop's [member HeldProp.look_time], [signal look_target_changed] hands out
+## a point on the prop for the head and eyes to follow, and null on release.
 ## The prop's materials are converted to [member toon_material] so it matches
 ## the character.
+
+## Emitted with the point to look at once the prop should be looked at, and
+## with null when it shouldn't be any more.
+signal look_target_changed(target: Node3D)
 
 @export var skeleton: Skeleton3D
 ## Template for the prop's materials. Must use toon.gdshader.
@@ -19,6 +25,7 @@ var _player: AnimationPlayer
 var _cue_times: Array[float] = []
 var _next_cue := 0
 var _time := 0.0
+var _look_target: Node3D
 
 
 func _ready() -> void:
@@ -32,7 +39,15 @@ func _process(delta: float) -> void:
 	while _next_cue < _cue_times.size() and _time >= _cue_times[_next_cue]:
 		_play(_player, _prop.cues[_cue_times[_next_cue]])
 		_next_cue += 1
-	if _next_cue >= _cue_times.size() and _instance.visible:
+	var look_pending := _prop.look_time >= 0.0 and _look_target == null
+	if look_pending and _time >= _prop.look_time:
+		_look_target = Marker3D.new()
+		_look_target.name = &"LookTarget"
+		_look_target.position = _prop.look_offset
+		_instance.add_child(_look_target)
+		look_target_changed.emit(_look_target)
+		look_pending = false
+	if _next_cue >= _cue_times.size() and _instance.visible and not look_pending:
 		set_process(false)
 
 
@@ -69,6 +84,9 @@ func release() -> void:
 	if _attachment == null:
 		return
 	var attachment := _attachment
+	if _look_target:
+		_look_target = null
+		look_target_changed.emit(null)
 	var animate := _instance.visible and not _prop.release_animation.is_empty()
 	if animate and _play(_player, _prop.release_animation):
 		_player.animation_finished.connect(
@@ -86,6 +104,18 @@ func release() -> void:
 ## Returns the held prop's scene instance, or null.
 func get_prop_instance() -> Node3D:
 	return _instance
+
+
+## Returns the point on the prop the character looks at, or null before its
+## look time (or with no prop).
+func get_look_target() -> Node3D:
+	return _look_target
+
+
+## Returns the held prop's [member HeldProp.look_offset] (e.g. its screen), or
+## zero with no prop.
+func get_look_offset() -> Vector3:
+	return _prop.look_offset if _prop else Vector3.ZERO
 
 
 # Plays [param cue] on [param player]; a leading "-" plays it backwards.

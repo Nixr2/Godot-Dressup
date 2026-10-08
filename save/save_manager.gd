@@ -34,6 +34,8 @@ const SECTION_TYPES: Array[Script] = [
 ## Presets that ship with the game, by name. They can't be overwritten or
 ## deleted.
 @export var builtin_presets: Dictionary[String, CharacterAppearance] = {}
+## The clothing a new game's player owns.
+@export var starting_inventory: OutfitCatalog
 
 ## The game being played; saved by [method save_game].
 var current: SaveGame
@@ -48,11 +50,14 @@ func _ready() -> void:
 	current = new_game()
 
 
-## Returns a new, empty game with every section.
+## Returns a new game with every section, the player owning
+## [member starting_inventory].
 func new_game() -> SaveGame:
 	var game := SaveGame.new()
 	for section_type in SECTION_TYPES:
 		game.add_section(section_type.new())
+	if starting_inventory:
+		game.player.inventory.add_all(starting_inventory.items)
 	return game
 
 

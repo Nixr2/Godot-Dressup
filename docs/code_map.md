@@ -21,11 +21,12 @@ Files and folders are `snake_case`; nodes and `class_name`s are `PascalCase`.
 | `character/` | The customizable doll (`mannequin.tscn`). `model/` holds the Blender export (`doll.glb`, its textures) and the data tied to it: skeleton profile, shape key rules, hide mask body. `materials/` has the skin and eye materials; `animation/` has the animation scripts, the clips (`clips/`) and the poses (`arm_poses/`, `body_poses/`). |
 | `customization/` | The reusable customization systems, scripts only: `wardrobe/` (equipping, outfit items and catalogs, hide mask baking), `shape_keys/` (body sliders, expressions, blinking), `body/` (skin tone and hair/eye color) and the saved `CharacterAppearance`. |
 | `outfits/` | Everything the Wardrobe can put on, one folder per item, grouped by slot: `tops/`, `bottoms/`, `underwear/`, `socks/`, `shoes/`, `hats/`, `face/` (decals such as blush) and `hair/` (`front/` and `back/` pieces, their shared `hair_material.tres` and `hair_catalog.tres`). Each item folder holds the `.glb`, its textures, its `OutfitItem` `.tres` and its baked hide masks. `outfit_catalog.tres` lists the clothes players can pick. |
+| `inventory/` | The player's `Inventory` of owned clothing, saved with their data and used by the in-game phone. |
 | `save/` | The save system: the `SaveManager` autoload (saves and presets as JSON in `user://`), `SaveGame` and its `SaveSection`s (`sections/`, e.g. the player's data). |
 | `common/` | Building blocks shared by several features: the toon shaders and base materials (`toon/`), the day/night cycle and its sky (`day_night/`), the grass field (`grass/`), effects such as the running dust trail (`effects/`) and import scripts (`import/`). |
 | `stages/` | 3D places: the `dressing_room/` (character creation) and the walkable stages (`meadow/`, the one Play opens; `bedroom/`; `playground/`), which share `walkable_stage.gd`. Shaders only one stage uses live in its folder. |
 | `player/` | The playable character body and its third-person camera. |
-| `ui/` | The character creation menu, the stage HUD and the shared dreamy `theme/`. |
+| `ui/` | The character creation menu, the stage HUD, the in-game `phone_menu/` and the shared dreamy `theme/`. |
 | `docs/` | This file. |
 | `addons/` | Third-party editor plugins (currently empty). |
 
@@ -42,6 +43,7 @@ Files and folders are `snake_case`; nodes and `class_name`s are `PascalCase`.
 | [player/player.tscn](../player/player.tscn) | `Player` | `ThirdPersonCamera`; instances the mannequin and the `DustTrail`. |
 | [ui/customization_menu/customization_menu.tscn](../ui/customization_menu/customization_menu.tscn) | `CustomizationMenu` | |
 | [ui/stage_hud/stage_hud.tscn](../ui/stage_hud/stage_hud.tscn) | `StageHud` | |
+| [ui/phone_menu/phone_menu.tscn](../ui/phone_menu/phone_menu.tscn) | `PhoneMenu` | The in-game phone's wardrobe screen (instanced by the meadow). |
 
 ## How the pieces talk
 
@@ -92,10 +94,25 @@ CustomizationMenu ──signals──► main.gd ──calls──► Mannequin 
 - **Presets:** the Presets card asks `main.gd` to save, load or delete; it
   calls `SaveManager.save_preset()` / `load_preset()` / `delete_preset()`
   and applies a loaded look with `Mannequin.apply_appearance()`.
+- **Phone and inventory:** pressing `toggle_phone` makes the `Player` play
+  its phone arm pose, stop and pause mouse look; when the phone is open it
+  emits `phone_opened` and the `WalkableStage` fills its `PhoneMenu` from the
+  player's `Inventory` (handed over in `setup()`) and slides it in. The menu's
+  choices go to the player's `Wardrobe`. Its Camera tab calls
+  `Player.set_selfie_mode()`: the `SelfieCamera` adds a `TwoBoneIK3D` and a
+  hand `LookAtModifier3D` before the clothing rig, reaches the arm to the
+  aimed spot and makes the head look into the lens; the phone's viewfinder
+  renders from it live into its own SubViewport. Take Photo renders that
+  view at 1080x1440 (`PhoneMenu.capture_photo()`) and saves it with
+  `PhotoAlbum`. `main.gd` adds the clothes worn in
+  character creation to the inventory on Play, and copies the in-game outfit
+  back to character creation on Back.
 - **Held props:** picking an arm pose makes `CharacterAnimator` emit
   `arm_pose_changed`; the `Mannequin` hands the pose's `HeldProp` to
   `HeldPropController.hold()`, which attaches the prop to the hand bone,
-  shows it at `show_time`, plays its cues in time with the pose and, when the
+  shows it at `show_time`, plays its cues in time with the pose, from
+  `look_time` steers the head and eyes to it (`look_target_changed` →
+  `LookAtController.set_override_target()`) and, when the
   pose ends, plays its `release_animation` (closing the phone) before removing it.
 - **Shape keys:** `ShapeKeyController` merges body sliders, expressions,
   clothing overrides and blinking into blend shape weights every frame that
@@ -110,6 +127,7 @@ as `.tres` files:
 |---|---|---|
 | `OutfitItem` | `outfits/**/<item>.tres` | One wearable piece (clothing, hair or decal): scene, slot, hide mask, tags, shape key overrides, tint. |
 | `OutfitCatalog` | `outfits/outfit_catalog.tres` | Every item players can choose. |
+| `Inventory` | Inside `PlayerSection` (saved as item ids) | The clothing the player owns. |
 | `CharacterAppearance` | `character/default_appearance.tres`; saves and presets as JSON | A look. Converted to and from save data with `to_dict()` / `from_dict()`. |
 | `HideMaskBody` | `character/model/doll_hide_mask_body.tres` | Which body and skin material hide masks are baked against. |
 | `ShapeKeySet` / `ShapeKeyDefinition` | `character/model/doll_shape_keys.tres` | Shape key rules: categories, clothing conditions, driven keys, blinking. |
@@ -146,7 +164,7 @@ Entry point. Wires the GUI to the 3D world (signals up, calls down) and swaps be
 
 **Engine callbacks:** [`_ready`](../main/main.gd#L18), [`_notification`](../main/main.gd#L60)
 
-**Internal:** [`_sync_menu`](../main/main.gd#L72), [`_save_game`](../main/main.gd#L95), [`_refresh_presets`](../main/main.gd#L100), [`_update_shape_key_availability`](../main/main.gd#L106), [`_on_item_equipped`](../main/main.gd#L114), [`_on_item_unequipped`](../main/main.gd#L119), [`_on_preset_save_requested`](../main/main.gd#L123), [`_on_preset_load_requested`](../main/main.gd#L134), [`_on_play_requested`](../main/main.gd#L144), [`_on_stage_exit_requested`](../main/main.gd#L155)
+**Internal:** [`_sync_menu`](../main/main.gd#L72), [`_save_game`](../main/main.gd#L95), [`_refresh_presets`](../main/main.gd#L103), [`_update_shape_key_availability`](../main/main.gd#L109), [`_on_item_equipped`](../main/main.gd#L117), [`_on_item_unequipped`](../main/main.gd#L122), [`_on_preset_save_requested`](../main/main.gd#L126), [`_on_preset_load_requested`](../main/main.gd#L137), [`_on_play_requested`](../main/main.gd#L147), [`_on_stage_exit_requested`](../main/main.gd#L167)
 
 ## Character
 
@@ -199,15 +217,21 @@ A prop held in the hand during an ArmPose, such as a phone.
 
 Puts an arm pose's HeldProp in the character's hand and plays the prop's animation cues in time with the pose.
 
+| Signal | Line | Description |
+|---|---|---|
+| `look_target_changed` | [15](../character/animation/held_prop_controller.gd#L15) | Emitted with the point to look at once the prop should be looked at, and with null when it shouldn't be any more. |
+
 | Function | Line | Description |
 |---|---|---|
-| `hold()` | [41](../character/animation/held_prop_controller.gd#L41) | Attaches `prop` to its bone and restarts its timeline. |
-| `release()` | [68](../character/animation/held_prop_controller.gd#L68) | Removes the held prop, if any, after its release animation. |
-| `get_prop_instance()` | [87](../character/animation/held_prop_controller.gd#L87) | Returns the held prop's scene instance, or null. |
+| `hold()` | [56](../character/animation/held_prop_controller.gd#L56) | Attaches `prop` to its bone and restarts its timeline. |
+| `release()` | [83](../character/animation/held_prop_controller.gd#L83) | Removes the held prop, if any, after its release animation. |
+| `get_prop_instance()` | [105](../character/animation/held_prop_controller.gd#L105) | Returns the held prop's scene instance, or null. |
+| `get_look_target()` | [111](../character/animation/held_prop_controller.gd#L111) | Returns the point on the prop the character looks at, or null before its look time (or with no prop). |
+| `get_look_offset()` | [117](../character/animation/held_prop_controller.gd#L117) | Returns the held prop's `HeldProp.look_offset` (e.g. |
 
-**Engine callbacks:** [`_ready`](../character/animation/held_prop_controller.gd#L24), [`_process`](../character/animation/held_prop_controller.gd#L28)
+**Engine callbacks:** [`_ready`](../character/animation/held_prop_controller.gd#L31), [`_process`](../character/animation/held_prop_controller.gd#L35)
 
-**Internal:** [`_play`](../character/animation/held_prop_controller.gd#L93), [`_find_animation_player`](../character/animation/held_prop_controller.gd#L105), [`_convert_materials`](../character/animation/held_prop_controller.gd#L110)
+**Internal:** [`_play`](../character/animation/held_prop_controller.gd#L123), [`_find_animation_player`](../character/animation/held_prop_controller.gd#L135), [`_convert_materials`](../character/animation/held_prop_controller.gd#L140)
 
 ### `LookAtController`
 
@@ -217,13 +241,14 @@ Makes a character's head and eyes follow a target (e.g. the camera).
 
 | Function | Line | Description |
 |---|---|---|
-| `set_target()` | [32](../character/animation/look_at_controller.gd#L32) | Follows `target`. |
-| `set_head_follow()` | [41](../character/animation/look_at_controller.gd#L41) | Fades head following on or off. |
-| `set_eyes_follow()` | [46](../character/animation/look_at_controller.gd#L46) | Fades eye following on or off. |
+| `set_target()` | [40](../character/animation/look_at_controller.gd#L40) | Follows `target`. |
+| `set_override_target()` | [48](../character/animation/look_at_controller.gd#L48) | Looks at `target` with head and eyes, whatever the follow toggles say, until called with null. |
+| `set_head_follow()` | [55](../character/animation/look_at_controller.gd#L55) | Fades head following on or off. |
+| `set_eyes_follow()` | [60](../character/animation/look_at_controller.gd#L60) | Fades eye following on or off. |
 
-**Engine callbacks:** [`_ready`](../character/animation/look_at_controller.gd#L20), [`_process`](../character/animation/look_at_controller.gd#L25)
+**Engine callbacks:** [`_ready`](../character/animation/look_at_controller.gd#L27), [`_process`](../character/animation/look_at_controller.gd#L32)
 
-**Internal:** [`_fade`](../character/animation/look_at_controller.gd#L50), [`_all_modifiers`](../character/animation/look_at_controller.gd#L57)
+**Internal:** [`_point_modifiers`](../character/animation/look_at_controller.gd#L66), [`_get_look_target`](../character/animation/look_at_controller.gd#L74), [`_hold_current_point`](../character/animation/look_at_controller.gd#L80), [`_get_fade_anchor`](../character/animation/look_at_controller.gd#L86), [`_fade`](../character/animation/look_at_controller.gd#L95), [`_all_modifiers`](../character/animation/look_at_controller.gd#L102)
 
 ### `Mannequin`
 
@@ -233,12 +258,12 @@ Customizable base character: the Doll model plus its Wardrobe, BodyCustomizer, S
 
 | Function | Line | Description |
 |---|---|---|
-| `apply_appearance()` | [25](../character/mannequin.gd#L25) | Applies a saved look: colors, body shapes and worn items. |
-| `get_appearance()` | [32](../character/mannequin.gd#L32) | Returns the current look as a new CharacterAppearance. |
+| `apply_appearance()` | [26](../character/mannequin.gd#L26) | Applies a saved look: colors, body shapes and worn items. |
+| `get_appearance()` | [33](../character/mannequin.gd#L33) | Returns the current look as a new CharacterAppearance. |
 
 **Engine callbacks:** [`_ready`](../character/mannequin.gd#L18)
 
-**Internal:** [`_on_arm_pose_changed`](../character/mannequin.gd#L40)
+**Internal:** [`_on_arm_pose_changed`](../character/mannequin.gd#L41)
 
 ## Customization module
 
@@ -331,11 +356,11 @@ Bakes what an OutfitItem covers into a black/white mask over the UVs of the surf
 
 | Function | Line | Description |
 |---|---|---|
-| `static bake()` | [26](../customization/wardrobe/hide_mask_baker.gd#L26) | Returns `item`'s body hide mask as an L8 image, white where skin is hidden. |
-| `static bake_over()` | [33](../customization/wardrobe/hide_mask_baker.gd#L33) | Returns the mask of what `item` covers of `under`, over `under`'s UVs, as an L8 image. |
-| `static save_mask()` | [39](../customization/wardrobe/hide_mask_baker.gd#L39) | Saves `image` as a PNG at `path`. |
+| `static bake()` | [28](../customization/wardrobe/hide_mask_baker.gd#L28) | Returns `item`'s body hide mask as an L8 image, white where skin is hidden. |
+| `static bake_over()` | [35](../customization/wardrobe/hide_mask_baker.gd#L35) | Returns the mask of what `item` covers of `under`, over `under`'s UVs, as an L8 image. |
+| `static save_mask()` | [41](../customization/wardrobe/hide_mask_baker.gd#L41) | Saves `image` as a PNG at `path`. |
 
-**Internal:** [`_bake`](../customization/wardrobe/hide_mask_baker.gd#L56), [`_rasterize_triangle`](../customization/wardrobe/hide_mask_baker.gd#L93), [`_pad_islands`](../customization/wardrobe/hide_mask_baker.gd#L139), [`_collect_triangles`](../customization/wardrobe/hide_mask_baker.gd#L162), [`_append_surface`](../customization/wardrobe/hide_mask_baker.gd#L183), [`_triangle_bounds`](../customization/wardrobe/hide_mask_baker.gd#L222), [`_transform_to`](../customization/wardrobe/hide_mask_baker.gd#L227), [`_TriangleGrid._init`](../customization/wardrobe/hide_mask_baker.gd#L252), [`_TriangleGrid.segment_hits`](../customization/wardrobe/hide_mask_baker.gd#L270), [`_TriangleGrid._cell_of`](../customization/wardrobe/hide_mask_baker.gd#L283), [`_TriangleGrid._segment_hits_triangle`](../customization/wardrobe/hide_mask_baker.gd#L287)
+**Internal:** [`_bake`](../customization/wardrobe/hide_mask_baker.gd#L58), [`_rasterize_triangle`](../customization/wardrobe/hide_mask_baker.gd#L96), [`_shrink_hidden`](../customization/wardrobe/hide_mask_baker.gd#L145), [`_pad_islands`](../customization/wardrobe/hide_mask_baker.gd#L168), [`_collect_triangles`](../customization/wardrobe/hide_mask_baker.gd#L191), [`_append_surface`](../customization/wardrobe/hide_mask_baker.gd#L212), [`_triangle_bounds`](../customization/wardrobe/hide_mask_baker.gd#L251), [`_transform_to`](../customization/wardrobe/hide_mask_baker.gd#L256), [`_TriangleGrid._init`](../customization/wardrobe/hide_mask_baker.gd#L281), [`_TriangleGrid.segment_hits`](../customization/wardrobe/hide_mask_baker.gd#L299), [`_TriangleGrid._cell_of`](../customization/wardrobe/hide_mask_baker.gd#L312), [`_TriangleGrid._segment_hits_triangle`](../customization/wardrobe/hide_mask_baker.gd#L316)
 
 ### `HideMaskBody`
 
@@ -363,10 +388,10 @@ A single wearable piece of clothing or accessory.
 
 | Function | Line | Description |
 |---|---|---|
-| `bake_hide_mask()` | [86](../customization/wardrobe/outfit_item.gd#L86) | Bakes `hide_mask` from the garment's shape and saves it as "<id>_hide_mask.png" next to this resource. |
-| `bake_covered_mask()` | [97](../customization/wardrobe/outfit_item.gd#L97) | Bakes what `over` covers of this item into `covered_masks`, saved as "<id>_covered_by_<over id>.png" next to this resource. |
-| `can_bake()` | [111](../customization/wardrobe/outfit_item.gd#L111) | Whether this item has what baking needs, reporting what's missing if not. |
-| `get_mask_path()` | [122](../customization/wardrobe/outfit_item.gd#L122) | Path of this item's mask named "<id>_<suffix>.png", next to the resource. |
+| `bake_hide_mask()` | [90](../customization/wardrobe/outfit_item.gd#L90) | Bakes `hide_mask` from the garment's shape and saves it as "<id>_hide_mask.png" next to this resource. |
+| `bake_covered_mask()` | [101](../customization/wardrobe/outfit_item.gd#L101) | Bakes what `over` covers of this item into `covered_masks`, saved as "<id>_covered_by_<over id>.png" next to this resource. |
+| `can_bake()` | [115](../customization/wardrobe/outfit_item.gd#L115) | Whether this item has what baking needs, reporting what's missing if not. |
+| `get_mask_path()` | [126](../customization/wardrobe/outfit_item.gd#L126) | Path of this item's mask named "<id>_<suffix>.png", next to the resource. |
 
 ### `Wardrobe`
 
@@ -448,6 +473,29 @@ Post-import script for set pieces (rooms, props).
 
 **Internal:** [`_use_nearest_filtering`](../common/import/set_piece_import.gd#L18), [`_make_collision_two_sided`](../common/import/set_piece_import.gd#L29)
 
+## Inventory
+
+### `Inventory`
+
+[inventory/inventory.gd](../inventory/inventory.gd) · extends `RefCounted`
+
+The clothing the player owns, which they can put on in game (see PhoneMenu). Each item is owned at most once.
+
+| Signal | Line | Description |
+|---|---|---|
+| `changed` | [9](../inventory/inventory.gd#L9) | Emitted when an item is added or removed. |
+
+| Function | Line | Description |
+|---|---|---|
+| `get_items()` | [15](../inventory/inventory.gd#L15) | Returns every owned item, in the order they were added. |
+| `get_items_for_slot()` | [20](../inventory/inventory.gd#L20) | Returns the owned items worn in `slot`. |
+| `has()` | [26](../inventory/inventory.gd#L26) |  |
+| `add()` | [31](../inventory/inventory.gd#L31) | Adds `item` if it isn't owned yet. |
+| `add_all()` | [40](../inventory/inventory.gd#L40) | Adds every item in `items` that isn't owned yet. |
+| `remove()` | [51](../inventory/inventory.gd#L51) | Removes `item`. |
+| `to_ids()` | [60](../inventory/inventory.gd#L60) | Returns the owned items' ids, for saving. |
+| `load_ids()` | [69](../inventory/inventory.gd#L69) | Replaces the owned items with those in `ids`; `find_item` turns an id into its OutfitItem (or null), and unknown ids are skipped. |
+
 ## Save system
 
 ### `SaveGame`
@@ -477,23 +525,23 @@ Saves and loads the game and character creation presets (autoload "SaveManager")
 
 | Function | Line | Description |
 |---|---|---|
-| `new_game()` | [52](../save/save_manager.gd#L52) | Returns a new, empty game with every section. |
-| `save_game()` | [60](../save/save_manager.gd#L60) | Writes `current` to `slot`. |
-| `load_game()` | [72](../save/save_manager.gd#L72) | Replaces `current` with the game in `slot`. |
-| `has_save()` | [83](../save/save_manager.gd#L83) |  |
-| `delete_save()` | [87](../save/save_manager.gd#L87) |  |
-| `get_save_slots()` | [92](../save/save_manager.gd#L92) | Returns the names of every saved slot. |
-| `find_item()` | [97](../save/save_manager.gd#L97) | Returns the item with `id` from `item_catalogs`, or null. |
-| `get_preset_names()` | [102](../save/save_manager.gd#L102) | Returns the names of the user's presets, sorted. |
-| `get_builtin_preset_names()` | [113](../save/save_manager.gd#L113) | Returns the names of `builtin_presets`, sorted. |
-| `is_builtin_preset()` | [119](../save/save_manager.gd#L119) |  |
-| `save_preset()` | [125](../save/save_manager.gd#L125) | Saves `appearance` as a user preset, replacing one with the same name. |
-| `load_preset()` | [138](../save/save_manager.gd#L138) | Returns the preset named `preset_name` (built-in or user), or null. |
-| `delete_preset()` | [149](../save/save_manager.gd#L149) | Deletes a user preset. |
+| `new_game()` | [55](../save/save_manager.gd#L55) | Returns a new game with every section, the player owning `starting_inventory`. |
+| `save_game()` | [65](../save/save_manager.gd#L65) | Writes `current` to `slot`. |
+| `load_game()` | [77](../save/save_manager.gd#L77) | Replaces `current` with the game in `slot`. |
+| `has_save()` | [88](../save/save_manager.gd#L88) |  |
+| `delete_save()` | [92](../save/save_manager.gd#L92) |  |
+| `get_save_slots()` | [97](../save/save_manager.gd#L97) | Returns the names of every saved slot. |
+| `find_item()` | [102](../save/save_manager.gd#L102) | Returns the item with `id` from `item_catalogs`, or null. |
+| `get_preset_names()` | [107](../save/save_manager.gd#L107) | Returns the names of the user's presets, sorted. |
+| `get_builtin_preset_names()` | [118](../save/save_manager.gd#L118) | Returns the names of `builtin_presets`, sorted. |
+| `is_builtin_preset()` | [124](../save/save_manager.gd#L124) |  |
+| `save_preset()` | [130](../save/save_manager.gd#L130) | Saves `appearance` as a user preset, replacing one with the same name. |
+| `load_preset()` | [143](../save/save_manager.gd#L143) | Returns the preset named `preset_name` (built-in or user), or null. |
+| `delete_preset()` | [154](../save/save_manager.gd#L154) | Deletes a user preset. |
 
-**Engine callbacks:** [`_ready`](../save/save_manager.gd#L44)
+**Engine callbacks:** [`_ready`](../save/save_manager.gd#L46)
 
-**Internal:** [`_slot_path`](../save/save_manager.gd#L158), [`_preset_path`](../save/save_manager.gd#L162), [`_write_json`](../save/save_manager.gd#L168), [`_read_json`](../save/save_manager.gd#L186), [`_delete_file`](../save/save_manager.gd#L197), [`_list_json_files`](../save/save_manager.gd#L206)
+**Internal:** [`_slot_path`](../save/save_manager.gd#L163), [`_preset_path`](../save/save_manager.gd#L167), [`_write_json`](../save/save_manager.gd#L173), [`_read_json`](../save/save_manager.gd#L191), [`_delete_file`](../save/save_manager.gd#L202), [`_list_json_files`](../save/save_manager.gd#L211)
 
 ### `SaveSection`
 
@@ -511,13 +559,13 @@ One independent part of a SaveGame, such as the player's data.
 
 [save/sections/player_section.gd](../save/sections/player_section.gd) · extends `SaveSection`
 
-The player's own data: their character's look and their attributes.
+The player's own data: their character's look, the clothing they own and their attributes.
 
 | Function | Line | Description |
 |---|---|---|
-| `get_key()` | [14](../save/sections/player_section.gd#L14) |  |
-| `to_dict()` | [18](../save/sections/player_section.gd#L18) |  |
-| `from_dict()` | [28](../save/sections/player_section.gd#L28) |  |
+| `get_key()` | [18](../save/sections/player_section.gd#L18) |  |
+| `to_dict()` | [22](../save/sections/player_section.gd#L22) |  |
+| `from_dict()` | [33](../save/sections/player_section.gd#L33) |  |
 
 ## Stages
 
@@ -560,17 +608,28 @@ A stage the customized character can walk around in.
 
 | Signal | Line | Description |
 |---|---|---|
-| `exit_requested` | [10](../stages/walkable_stage.gd#L10) | Emitted when the player asks to return to character creation. |
+| `exit_requested` | [13](../stages/walkable_stage.gd#L13) | Emitted when the player asks to return to character creation. |
 
 | Function | Line | Description |
 |---|---|---|
-| `setup()` | [42](../stages/walkable_stage.gd#L42) | Dresses the player's character. |
+| `setup()` | [62](../stages/walkable_stage.gd#L62) | Dresses the player's character and gives the phone menu the clothes they own. |
+| `get_player_appearance()` | [69](../stages/walkable_stage.gd#L69) | Returns the player character's current look. |
 
-**Engine callbacks:** [`_ready`](../stages/walkable_stage.gd#L17)
+**Engine callbacks:** [`_ready`](../stages/walkable_stage.gd#L23)
 
-**Internal:** [`_on_move_speed_changed`](../stages/walkable_stage.gd#L47), [`_on_jog_speed_changed`](../stages/walkable_stage.gd#L51), [`_on_sprint_speed_changed`](../stages/walkable_stage.gd#L55), [`_on_time_of_day_changed`](../stages/walkable_stage.gd#L59), [`_on_time_paused_toggled`](../stages/walkable_stage.gd#L63), [`_on_walk_playback_multiplier_changed`](../stages/walkable_stage.gd#L67)
+**Internal:** [`_on_move_speed_changed`](../stages/walkable_stage.gd#L73), [`_on_jog_speed_changed`](../stages/walkable_stage.gd#L77), [`_on_sprint_speed_changed`](../stages/walkable_stage.gd#L81), [`_on_time_of_day_changed`](../stages/walkable_stage.gd#L85), [`_on_time_paused_toggled`](../stages/walkable_stage.gd#L89), [`_on_walk_playback_multiplier_changed`](../stages/walkable_stage.gd#L93), [`_on_phone_opened`](../stages/walkable_stage.gd#L97), [`_on_item_equipped`](../stages/walkable_stage.gd#L103), [`_on_item_unequipped`](../stages/walkable_stage.gd#L107), [`_on_camera_toggled`](../stages/walkable_stage.gd#L111), [`_take_photo`](../stages/walkable_stage.gd#L115)
 
 ## Player
+
+### `PhotoAlbum`
+
+[player/photo_album.gd](../player/photo_album.gd) · extends `RefCounted`
+
+Saves photos taken with the in-game phone as PNGs in user://photos (on Windows, %APPDATA%/Godot/app_userdata/Dressup/photos).
+
+| Function | Line | Description |
+|---|---|---|
+| `static save()` | [11](../player/photo_album.gd#L11) | Saves `image` with a timestamped name and returns its path, or an empty string if it couldn't be saved. |
 
 ### `Player`
 
@@ -578,15 +637,45 @@ A stage the customized character can walk around in.
 
 Walks a customized Mannequin around, relative to the camera.
 
+| Signal | Line | Description |
+|---|---|---|
+| `phone_opened` | [24](../player/player.gd#L24) | Emitted once the phone is out and open, ready for its menu. |
+| `phone_closed` | [26](../player/player.gd#L26) | Emitted when the phone is put away. |
+
 | Function | Line | Description |
 |---|---|---|
-| `get_effective_move_speed()` | [91](../player/player.gd#L91) | Returns the speed the player walks at, in m/s, resolving `move_speed` = 0 to the walk's stride speed. |
-| `get_effective_jog_speed()` | [101](../player/player.gd#L101) | Returns the speed the player jogs at, in m/s, resolving `jog_speed` = 0 to the jog's stride speed. |
-| `get_effective_sprint_speed()` | [111](../player/player.gd#L111) | Returns the speed the player sprints at, in m/s, resolving `sprint_speed` = 0 to the sprint's stride speed. |
+| `take_out_phone()` | [126](../player/player.gd#L126) | Takes the phone out: plays `phone_pose`, stops the character and pauses mouse look. |
+| `put_away_phone()` | [140](../player/player.gd#L140) | Puts the phone away and resumes mouse look. |
+| `is_phone_out()` | [150](../player/player.gd#L150) |  |
+| `set_selfie_mode()` | [156](../player/player.gd#L156) | Holds the phone out for a selfie with its front camera (only while the phone is out), or back in the phone pose. |
+| `get_selfie_camera()` | [163](../player/player.gd#L163) | Returns the phone's front camera, for a viewfinder to render from. |
+| `is_selfie_mode()` | [167](../player/player.gd#L167) |  |
+| `set_wide_lens()` | [172](../player/player.gd#L172) | Switches the phone camera between its normal and wide (0.5x) lens. |
+| `get_effective_move_speed()` | [183](../player/player.gd#L183) | Returns the speed the player walks at, in m/s, resolving `move_speed` = 0 to the walk's stride speed. |
+| `get_effective_jog_speed()` | [193](../player/player.gd#L193) | Returns the speed the player jogs at, in m/s, resolving `jog_speed` = 0 to the jog's stride speed. |
+| `get_effective_sprint_speed()` | [203](../player/player.gd#L203) | Returns the speed the player sprints at, in m/s, resolving `sprint_speed` = 0 to the sprint's stride speed. |
 
-**Engine callbacks:** [`_ready`](../player/player.gd#L46), [`_unhandled_input`](../player/player.gd#L50), [`_physics_process`](../player/player.gd#L57)
+**Engine callbacks:** [`_ready`](../player/player.gd#L66), [`_input`](../player/player.gd#L72), [`_unhandled_input`](../player/player.gd#L81), [`_physics_process`](../player/player.gd#L90)
 
-**Internal:** [`_update_gait_speeds`](../player/player.gd#L119)
+**Internal:** [`_on_phone_open_delay_elapsed`](../player/player.gd#L176), [`_update_gait_speeds`](../player/player.gd#L211)
+
+### `SelfieCamera`
+
+[player/selfie_camera.gd](../player/selfie_camera.gd) · extends `Camera3D`
+
+The phone's front camera: while active, the character holds the phone out at arm's length, this camera sits on the phone looking back at them, and their head and eyes look into the lens. It doesn't take over the main view: a viewfinder (see PhoneMenu) renders from it.
+
+| Function | Line | Description |
+|---|---|---|
+| `setup()` | [85](../player/selfie_camera.gd#L85) | Points this camera at `mannequin`'s skeleton. |
+| `is_active()` | [90](../player/selfie_camera.gd#L90) |  |
+| `set_wide_lens()` | [95](../player/selfie_camera.gd#L95) | Switches between the normal and the wide (0.5x) lens. |
+| `is_wide_lens()` | [99](../player/selfie_camera.gd#L99) |  |
+| `activate()` | [104](../player/selfie_camera.gd#L104) | Turns the selfie camera on or off. |
+
+**Engine callbacks:** [`_ready`](../player/selfie_camera.gd#L76), [`_unhandled_input`](../player/selfie_camera.gd#L122), [`_process`](../player/selfie_camera.gd#L136)
+
+**Internal:** [`_update_markers`](../player/selfie_camera.gd#L152), [`_place_lens`](../player/selfie_camera.gd#L170), [`_create_modifiers`](../player/selfie_camera.gd#L187), [`_free_modifiers`](../player/selfie_camera.gd#L230), [`_add_marker`](../player/selfie_camera.gd#L241), [`_bone_position`](../player/selfie_camera.gd#L249)
 
 ### `ThirdPersonCamera`
 
@@ -596,13 +685,15 @@ Smooth, cinematic third-person camera (in the style of Skyrim) orbiting a point 
 
 | Function | Line | Description |
 |---|---|---|
-| `set_motion()` | [133](../player/third_person_camera.gd#L133) | Tells the camera how the character moves, for its framing: over the shoulder while moving, a wider view while jogging, wider still sprinting. |
-| `is_mouse_captured()` | [142](../player/third_person_camera.gd#L142) |  |
-| `set_mouse_captured()` | [146](../player/third_person_camera.gd#L146) |  |
+| `set_motion()` | [138](../player/third_person_camera.gd#L138) | Tells the camera how the character moves, for its framing: over the shoulder while moving, a wider view while jogging, wider still sprinting. |
+| `get_camera()` | [148](../player/third_person_camera.gd#L148) | Returns the camera at the end of the spring arm. |
+| `set_look_enabled()` | [155](../player/third_person_camera.gd#L155) | Pauses or resumes mouse look. |
+| `is_mouse_captured()` | [161](../player/third_person_camera.gd#L161) |  |
+| `set_mouse_captured()` | [165](../player/third_person_camera.gd#L165) |  |
 
-**Engine callbacks:** [`_ready`](../player/third_person_camera.gd#L65), [`_exit_tree`](../player/third_person_camera.gd#L79), [`_process`](../player/third_person_camera.gd#L85), [`_unhandled_input`](../player/third_person_camera.gd#L98), [`_input`](../player/third_person_camera.gd#L125)
+**Engine callbacks:** [`_ready`](../player/third_person_camera.gd#L66), [`_exit_tree`](../player/third_person_camera.gd#L80), [`_process`](../player/third_person_camera.gd#L86), [`_unhandled_input`](../player/third_person_camera.gd#L99), [`_input`](../player/third_person_camera.gd#L128)
 
-**Internal:** [`_get_pivot`](../player/third_person_camera.gd#L152), [`_apply_rotation`](../player/third_person_camera.gd#L156), [`_smooth`](../player/third_person_camera.gd#L161)
+**Internal:** [`_get_pivot`](../player/third_person_camera.gd#L171), [`_apply_rotation`](../player/third_person_camera.gd#L175), [`_smooth`](../player/third_person_camera.gd#L180)
 
 ## User interface
 
@@ -648,7 +739,37 @@ Character creation UI: appearance cards on the left, the wardrobe on the right.
 
 **Engine callbacks:** [`_ready`](../ui/customization_menu/customization_menu.gd#L150), [`_process`](../ui/customization_menu/customization_menu.gd#L179)
 
-**Internal:** [`_update_hover`](../ui/customization_menu/customization_menu.gd#L276), [`_focus_card`](../ui/customization_menu/customization_menu.gd#L285), [`_is_hover_blocked`](../ui/customization_menu/customization_menu.gd#L297), [`_find_hovered_card`](../ui/customization_menu/customization_menu.gd#L308), [`_build_swatches`](../ui/customization_menu/customization_menu.gd#L320), [`_build_hair_styles`](../ui/customization_menu/customization_menu.gd#L342), [`_build_body_shape_sliders`](../ui/customization_menu/customization_menu.gd#L356), [`_build_expression_buttons`](../ui/customization_menu/customization_menu.gd#L371), [`_add_toggle_button`](../ui/customization_menu/customization_menu.gd#L382), [`_build_slot_list`](../ui/customization_menu/customization_menu.gd#L395), [`_clear`](../ui/customization_menu/customization_menu.gd#L434), [`_on_skin_slider_changed`](../ui/customization_menu/customization_menu.gd#L440), [`_on_body_shape_slider_changed`](../ui/customization_menu/customization_menu.gd#L444), [`_on_swatch_pressed`](../ui/customization_menu/customization_menu.gd#L448), [`_on_tint_picker_changed`](../ui/customization_menu/customization_menu.gd#L453), [`_add_preset_row`](../ui/customization_menu/customization_menu.gd#L457), [`_on_preset_name_changed`](../ui/customization_menu/customization_menu.gd#L476), [`_on_save_preset_pressed`](../ui/customization_menu/customization_menu.gd#L481), [`_on_delete_preset_pressed`](../ui/customization_menu/customization_menu.gd#L489), [`_disarm_delete_button`](../ui/customization_menu/customization_menu.gd#L498)
+**Internal:** [`_update_hover`](../ui/customization_menu/customization_menu.gd#L278), [`_focus_card`](../ui/customization_menu/customization_menu.gd#L287), [`_is_hover_blocked`](../ui/customization_menu/customization_menu.gd#L299), [`_find_hovered_card`](../ui/customization_menu/customization_menu.gd#L310), [`_build_swatches`](../ui/customization_menu/customization_menu.gd#L322), [`_build_hair_styles`](../ui/customization_menu/customization_menu.gd#L344), [`_build_body_shape_sliders`](../ui/customization_menu/customization_menu.gd#L358), [`_build_expression_buttons`](../ui/customization_menu/customization_menu.gd#L373), [`_add_toggle_button`](../ui/customization_menu/customization_menu.gd#L384), [`_build_slot_list`](../ui/customization_menu/customization_menu.gd#L397), [`_clear`](../ui/customization_menu/customization_menu.gd#L436), [`_on_skin_slider_changed`](../ui/customization_menu/customization_menu.gd#L442), [`_on_body_shape_slider_changed`](../ui/customization_menu/customization_menu.gd#L446), [`_on_swatch_pressed`](../ui/customization_menu/customization_menu.gd#L450), [`_on_tint_picker_changed`](../ui/customization_menu/customization_menu.gd#L455), [`_add_preset_row`](../ui/customization_menu/customization_menu.gd#L459), [`_on_preset_name_changed`](../ui/customization_menu/customization_menu.gd#L478), [`_on_save_preset_pressed`](../ui/customization_menu/customization_menu.gd#L483), [`_on_delete_preset_pressed`](../ui/customization_menu/customization_menu.gd#L491), [`_disarm_delete_button`](../ui/customization_menu/customization_menu.gd#L500)
+
+### `PhoneMenu`
+
+[ui/phone_menu/phone_menu.gd](../ui/phone_menu/phone_menu.gd) · extends `Control`
+
+The in-game phone, with two tabs: Wardrobe lists the clothing in the player's Inventory by slot to put on or take off, and Camera shows the phone's front camera live on its screen and takes photos with it (see SelfieCamera).
+
+| Signal | Line | Description |
+|---|---|---|
+| `item_selected` | [15](../ui/phone_menu/phone_menu.gd#L15) | Emitted when the player picks an item to wear. |
+| `slot_cleared` | [17](../ui/phone_menu/phone_menu.gd#L17) | Emitted when the player takes off what's worn in `slot`. |
+| `close_requested` | [19](../ui/phone_menu/phone_menu.gd#L19) | Emitted when the player asks to put the phone away. |
+| `camera_toggled` | [21](../ui/phone_menu/phone_menu.gd#L21) | Emitted when the Camera tab is opened (true) or left (false). |
+| `photo_requested` | [23](../ui/phone_menu/phone_menu.gd#L23) | Emitted when the player presses Take Photo. |
+| `wide_lens_toggled` | [25](../ui/phone_menu/phone_menu.gd#L25) | Emitted when the wide (0.5x) lens is switched on or off. |
+
+| Function | Line | Description |
+|---|---|---|
+| `show_inventory()` | [92](../ui/phone_menu/phone_menu.gd#L92) | Lists the items in `inventory`, marking what `wardrobe` has on. |
+| `set_equipped()` | [107](../ui/phone_menu/phone_menu.gd#L107) | Marks `item` as worn in `slot` (null = nothing worn). |
+| `open()` | [117](../ui/phone_menu/phone_menu.gd#L117) | Slides the phone up into view, on the Wardrobe tab. |
+| `close()` | [126](../ui/phone_menu/phone_menu.gd#L126) | Slides the phone down out of view, then hides it. |
+| `set_preview_camera()` | [136](../ui/phone_menu/phone_menu.gd#L136) | Sets the camera the viewfinder shows (e.g. |
+| `capture_photo()` | [142](../ui/phone_menu/phone_menu.gd#L142) | Renders the viewfinder's view at `PHOTO_SIZE` and returns it, flashing the viewfinder. |
+| `flash()` | [155](../ui/phone_menu/phone_menu.gd#L155) | Shows a white flash over the viewfinder, like a camera flash. |
+| `show_photo_status()` | [164](../ui/phone_menu/phone_menu.gd#L164) | Shows where the last photo was saved (or why it wasn't). |
+
+**Engine callbacks:** [`_ready`](../ui/phone_menu/phone_menu.gd#L71), [`_process`](../ui/phone_menu/phone_menu.gd#L84)
+
+**Internal:** [`_show_tab`](../ui/phone_menu/phone_menu.gd#L168), [`_set_tab_state`](../ui/phone_menu/phone_menu.gd#L175), [`_slide_to`](../ui/phone_menu/phone_menu.gd#L183), [`_get_rest_y`](../ui/phone_menu/phone_menu.gd#L196), [`_add_slot_card`](../ui/phone_menu/phone_menu.gd#L200), [`_add_button`](../ui/phone_menu/phone_menu.gd#L219)
 
 ### `StageHud`
 

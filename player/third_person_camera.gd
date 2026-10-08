@@ -55,6 +55,7 @@ var _moving := false
 # True while the cursor is only freed for as long as camera_free_cursor is held.
 var _cursor_held_free := false
 var _fov_boost := 0.0
+var _look_enabled := true
 
 # Cached because get_parent_node_3d() returns null once top_level is set.
 @onready var _target: Node3D = get_parent()
@@ -96,6 +97,8 @@ func _process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if not _look_enabled:
+		return
 	if event is InputEventMouseMotion:
 		var looking := is_mouse_captured() or Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)
 		if looking:
@@ -123,6 +126,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 # Caught before the GUI, so letting go of the key over the HUD still counts.
 func _input(event: InputEvent) -> void:
+	if not _look_enabled:
+		return
 	if event.is_action_released(&"camera_free_cursor") and _cursor_held_free:
 		_cursor_held_free = false
 		set_mouse_captured(true)
@@ -137,6 +142,20 @@ func set_motion(moving: bool, jogging: bool, sprinting := false) -> void:
 		_fov_boost = sprint_fov_boost
 	elif moving and jogging:
 		_fov_boost = jog_fov_boost
+
+
+## Returns the camera at the end of the spring arm.
+func get_camera() -> Camera3D:
+	return _camera
+
+
+## Pauses or resumes mouse look. While paused (e.g. a menu is open) the
+## cursor is free, and clicking the world doesn't capture it; resuming
+## captures it again.
+func set_look_enabled(enabled: bool) -> void:
+	_look_enabled = enabled
+	_cursor_held_free = false
+	set_mouse_captured(enabled)
 
 
 func is_mouse_captured() -> bool:

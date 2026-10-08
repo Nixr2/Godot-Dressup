@@ -1,11 +1,15 @@
 class_name PlayerSection
 extends SaveSection
-## The player's own data: their character's look and their attributes.
+## The player's own data: their character's look, the clothing they own and
+## their attributes.
 
 const KEY := &"player"
 
 ## The player's character look, or null before one has been saved.
 var appearance: CharacterAppearance
+## The clothing the player owns. A new game fills it with
+## SaveManager.starting_inventory.
+var inventory := Inventory.new()
 ## Numeric attributes by name (e.g. level, money, stats), for gameplay to
 ## fill in. Unknown names are kept, so attributes can be added freely.
 var stats: Dictionary[StringName, float] = {}
@@ -21,6 +25,7 @@ func to_dict() -> Dictionary:
 		stat_values[String(stat)] = stats[stat]
 	return {
 		"appearance": appearance.to_dict() if appearance else null,
+		"inventory": inventory.to_ids(),
 		"stats": stat_values,
 	}
 
@@ -30,6 +35,10 @@ func from_dict(data: Dictionary, _version: int) -> void:
 	appearance = null
 	if appearance_data is Dictionary:
 		appearance = CharacterAppearance.from_dict(appearance_data, SaveManager.find_item)
+	# Saves from before the inventory existed keep the starting inventory.
+	var item_ids: Variant = data.get("inventory")
+	if item_ids is Array:
+		inventory.load_ids(item_ids, SaveManager.find_item)
 	stats.clear()
 	var stat_values: Variant = data.get("stats")
 	if stat_values is Dictionary:

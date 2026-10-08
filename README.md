@@ -15,6 +15,8 @@ A 3D dress-up and character customization test project for **Godot 4.7**
 - Camera that focuses on whichever section of the menu you hover
 - Smooth, Skyrim-style stage camera: steer with the mouse while moving, orbit freely while standing
 - Head and eyes that can follow the camera
+- An in-game phone (with its take-out animation) for changing clothes from your inventory
+  and taking selfies with its front camera (saved to `user://photos`)
 - Dust kicked up behind the feet when jogging and sprinting
 - Autosave plus named character presets (JSON, versioned, with backups)
 - A walkable meadow with endless wind-swept grass and a day/night cycle (plus a bedroom stage)
@@ -33,6 +35,8 @@ A 3D dress-up and character customization test project for **Godot 4.7**
    | Ctrl / right bumper | Sprint |
    | Mouse | Look; steers while moving, orbits freely while standing |
    | R / middle click | Toggle autorun (W or S cancels) |
+   | Tab / Back button | Take out your phone: change clothes from your inventory, or open its Camera tab |
+   | Right-drag / wheel (Camera tab) | Move the arm holding the phone / hold it nearer or farther |
    | Mouse wheel | Zoom |
    | Hold Alt | Show the cursor to use the panel; let go to look again |
    | Esc / click the world | Free the cursor until you click the world |
@@ -42,7 +46,8 @@ A 3D dress-up and character customization test project for **Godot 4.7**
 ## Saving
 
 The game autosaves the player's look when you press Play and when you close
-the window, and loads it on start. Character creation's Presets card saves
+the window, and loads it on start, along with the clothes they own (their inventory;
+a new game starts with SaveManager's **Starting Inventory** catalog). Character creation's Presets card saves
 and loads named looks. Everything is JSON in `user://` (on Windows,
 `%APPDATA%/Godot/app_userdata/Dressup`): saves in `saves/`, presets in
 `presets/`.
@@ -75,7 +80,9 @@ Globals** (the `toon_*` entries), or at runtime with
    Masks** on the catalog. That bakes every item's body mask plus what each
    item hides of the items under it. If something still pokes through, raise
    the item's **Hide Distance** and bake again, or paint the PNG by hand
-   (white = hidden).
+   (white = hidden). **Hide Margin** (2 texels by default) leaves a thin
+   band of skin visible along the garment's edges; set it to 0 for items
+   that must hide everything they touch.
 
 ## Where to export from Blender
 

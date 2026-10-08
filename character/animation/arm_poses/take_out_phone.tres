@@ -14,6 +14,8 @@ cues = Dictionary[float, StringName]({
 0.85: &"open"
 })
 release_animation = &"-open"
+look_time = 0.6
+look_offset = Vector3(0, 0.01, -0.03)
 
 [resource]
 script = ExtResource("1_arm_pose")

@@ -90,10 +90,13 @@ func _sync_menu() -> void:
 	_update_shape_key_availability()
 
 
-## Stores the character creation look in the current game and writes it to
-## the autosave.
+## Stores the player's current look (on the stage while playing, else in
+## character creation) in the current game and writes it to the autosave.
 func _save_game() -> void:
-	SaveManager.current.player.appearance = _dressing_room.mannequin.get_appearance()
+	var appearance := _dressing_room.mannequin.get_appearance()
+	if _stage:
+		appearance = _stage.get_player_appearance()
+	SaveManager.current.player.appearance = appearance
 	SaveManager.save_game()
 
 
@@ -142,17 +145,28 @@ func _on_preset_load_requested(preset_name: String) -> void:
 
 ## Keeps character creation alive (but out of the tree) so it's unchanged on return.
 func _on_play_requested() -> void:
+	var player_data := SaveManager.current.player
+	# The clothes picked in character creation are owned from now on (hair
+	# isn't clothing).
+	var clothes := _dressing_room.mannequin.wardrobe.get_equipped_items().filter(
+			func(item: OutfitItem) -> bool:
+				return item.slot != OutfitItem.Slot.HAIR_FRONT and item.slot != OutfitItem.Slot.HAIR_BACK
+	)
+	player_data.inventory.add_all(Array(clothes, TYPE_OBJECT, &"Resource", OutfitItem))
 	_save_game()
-	var appearance := SaveManager.current.player.appearance
+	var appearance := player_data.appearance
 	remove_child(_dressing_room)
 	remove_child(_customization_menu)
 	_stage = play_stage.instantiate()
-	_stage.setup(appearance)
+	_stage.setup(appearance, player_data.inventory)
 	add_child(_stage)
 	_stage.exit_requested.connect(_on_stage_exit_requested)
 
 
+## Brings the outfit changed in game back to character creation.
 func _on_stage_exit_requested() -> void:
+	_save_game()
+	_dressing_room.mannequin.apply_appearance(_stage.get_player_appearance())
 	_stage.queue_free()
 	_stage = null
 	add_child(_dressing_room)

@@ -9,7 +9,8 @@ extends Resource
 ## entry in [member cues] plays one of the prop's own animations at that time,
 ## e.g. flipping a phone open as it reaches the face. When the pose ends,
 ## [member release_animation] plays (e.g. closing the phone) before the prop
-## is removed.
+## is removed. From [member look_time] on, the character's head and eyes
+## follow the prop's [member look_offset] point.
 
 @export var scene: PackedScene
 @export var bone: StringName = &"hand.l"
@@ -22,5 +23,10 @@ extends Resource
 @export var cues: Dictionary[float, StringName] = {}
 ## Prop animation played when the pose ends, before the prop is removed.
 @export var release_animation: StringName
+## Seconds into the pose when the head and eyes turn to the prop.
+## Negative = never look at it.
+@export_range(-1.0, 10.0, 0.01, "suffix:s") var look_time := -1.0
+## The point looked at, relative to the prop (e.g. its screen).
+@export var look_offset := Vector3.ZERO
 # Every animation name above can be prefixed with "-" to play it backwards
 # (e.g. "-open" closes a phone whose only animation opens it).
